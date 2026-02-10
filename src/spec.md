@@ -1,21 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Build an internal, role-based school operations app with Internet Identity authentication, shared School ID workflows across departments, PDF handling for specific modules, and comprehensive audit logging.
+**Goal:** Improve school selection/search across modules, extend Packing status with class/theme + counts, add Outstanding Amount management, and ensure Demo/Preview mode works end-to-end with locally persisted data.
 
 **Planned changes:**
-- Add a common login flow using Internet Identity that resolves the signed-in principal to exactly one staff role (Admin, Accounts, Packing, Marketing, Training, Academic) and redirects to the correct role dashboard; show an access-not-configured error for unregistered principals.
-- Implement backend data models and stable persistence for School, Staff, Payment, Packing Status, Training Visit, Academic Query, and Audit Log, all linked via a shared School ID and timestamped.
-- Enforce strict backend RBAC for all sensitive reads and all mutations; add frontend route guarding and hide/disable unauthorized UI actions.
-- Build Admin-only Staff management to create/update staff profiles and map Internet Identity principals to roles for login-time role resolution.
-- Create role-specific dashboards (six roles) with summary cards, relevant tables/lists, English loading/empty/error states, and Admin cross-department summaries plus an audit-log-based activity feed.
-- Implement Marketing pages to create schools, edit school core details, and update student counts; ensure immediate visibility across roles via the shared School ID.
-- Implement Accounts pages to manage school payments (amount, due date, status) and upload/download payment proof PDFs; prevent editing school core details.
-- Implement Packing pages to manage kit/add-on counts, packing/dispatch status and dispatch details, and permitted theme fields; ensure updates are visible across departments and audited.
-- Implement Training pages to log visits (required fields) and upload/download classroom observation PDFs; allow raising academic queries linked to schools.
-- Implement Academic pages to list/filter academic queries, add responses, update status, and ensure fully auditable query lifecycle.
-- Add global list/table pages with search + filtering for key entities and form-based validated data entry with clear English error handling.
-- Add an Admin audit log viewer with pagination and filtering (actor, entity type, school ID, date range).
-- Apply a clean, simple, responsive (desktop-first) UI theme consistently across dashboards, forms, and tables (avoiding a blue/purple-dominant theme).
+- Update the Packing page to include a searchable school select (not only route-param driven), show the selected school’s details read-only, and display an empty state when no school is selected.
+- Extend Packing status editing to include Class and Theme dropdowns with the exact requested option sets, and persist/reload these values per school (with existing RBAC rules for who can update).
+- Add a clearly labeled counts section on the Packing page for the selected school; validate inputs (no negative values) and persist/reload counts along with packing status updates.
+- Add an Admin workflow to search/select a school and set/update a per-school Outstanding Amount, with selected school details displayed read-only and access restricted to Admin.
+- Display a selected school’s Outstanding Amount as read-only in the Marketing module (showing either 0 or “Not set” consistently when absent).
+- Make Demo/Preview Mode support end-to-end flows without backend access: registering schools (Marketing and Admin entry points), reflecting new schools across modules, updating/reviewing Outstanding Amount, and saving/reloading Packing edits (class/theme/counts/packing details) using demo-local persisted data.
+- Allow Admin to register/create schools in non-demo mode (backend + frontend entry point), and ensure new schools appear across module school searches/lists with RBAC enforced.
 
-**User-visible outcome:** Staff can sign in with Internet Identity, be routed to their role dashboard, work on the same schools using a shared School ID within their permitted module(s), upload/download PDFs only for payment proofs and classroom observations, and (for Admin) manage staff and review a filterable audit log of all actions.
+**User-visible outcome:** Users can search/select schools in Packing and Admin workflows, update packing status with class/theme and counts, manage and view Outstanding Amount across Admin and Marketing, and complete these flows reliably in Demo/Preview mode with data persisting locally and reflecting across pages.

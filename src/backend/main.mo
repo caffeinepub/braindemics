@@ -2,6 +2,7 @@ import Map "mo:core/Map";
 import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Order "mo:core/Order";
 import Nat "mo:core/Nat";
@@ -11,6 +12,8 @@ import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Runtime "mo:core/Runtime";
+
+// Specify the migration module in the with-clause
 
 actor {
   include MixinStorage();
@@ -60,6 +63,54 @@ actor {
     };
   };
 
+  public type OutstandingAmount = {
+    schoolId : Text;
+    amount : Nat;
+    timestamp : Int;
+  };
+
+  public type PackingClass = {
+    #preSchool;
+    #class1;
+    #class2;
+    #class3;
+    #class4;
+    #class5;
+  };
+
+  module PackingClass {
+    public func toText(pClass : PackingClass) : Text {
+      switch (pClass) {
+        case (#preSchool) { "Pre-School" };
+        case (#class1) { "Class 1" };
+        case (#class2) { "Class 2" };
+        case (#class3) { "Class 3" };
+        case (#class4) { "Class 4" };
+        case (#class5) { "Class 5" };
+      };
+    };
+  };
+
+  public type PackingTheme = {
+    #themeA;
+    #themeB;
+    #themeC;
+    #themeD;
+    #themeE;
+  };
+
+  module PackingTheme {
+    public func toText(theme : PackingTheme) : Text {
+      switch (theme) {
+        case (#themeA) { "Theme A" };
+        case (#themeB) { "Theme B" };
+        case (#themeC) { "Theme C" };
+        case (#themeD) { "Theme D" };
+        case (#themeE) { "Theme E" };
+      };
+    };
+  };
+
   public type StaffProfile = {
     principal : Principal;
     fullName : Text;
@@ -85,6 +136,16 @@ actor {
     dueDate : Int;
     paid : Bool;
     paymentProof : ?Storage.ExternalBlob;
+    createdTimestamp : Int;
+    lastUpdateTimestamp : Int;
+  };
+
+  public type PackingCount = {
+    classType : PackingClass;
+    theme : PackingTheme;
+    totalCount : Nat;
+    packedCount : Nat;
+    addOnCount : Nat;
     createdTimestamp : Int;
     lastUpdateTimestamp : Int;
   };
@@ -153,6 +214,8 @@ actor {
 
   let schools = Map.empty<Text, School>();
   let staffProfiles = Map.empty<Principal, StaffProfile>();
+  let outstandingAmounts = Map.empty<Text, OutstandingAmount>();
+  let packingCounts = Map.empty<Text, PackingCount>();
   let payments = Map.empty<Text, Payment>();
   let packingStatuses = Map.empty<Text, PackingStatus>();
   let trainingVisits = Map.empty<Text, TrainingVisit>();
@@ -233,8 +296,9 @@ actor {
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only authorized staff can access profiles");
     };
+
     switch (staffProfiles.get(caller)) {
       case (null) { null };
       case (?profile) {
@@ -319,6 +383,9 @@ actor {
 
     staffProfiles.add(principal, profile);
 
+    // Automatically grant minimum required permission for user profile endpoints
+    AccessControl.assignRole(accessControlState, caller, principal, #user);
+
     logAudit(
       caller,
       "CREATE_STAFF",
@@ -376,7 +443,40 @@ actor {
   };
 
   // ============================================================================
-  // SCHOOL MANAGEMENT (Marketing + read access for others)
+  // REPAIR OPERATION (Admin only)
+  // ============================================================================
+
+  public shared ({ caller }) func repairStaffProfilePermissions() : async Nat {
+    requireAdmin(caller);
+
+    var repairedCount : Nat = 0;
+
+    for ((principal, profile) in staffProfiles.entries()) {
+      // Check if the staff member already has at least #user permission
+      let hasUserPermission = AccessControl.hasPermission(accessControlState, principal, #user);
+
+      if (not hasUserPermission) {
+        // Grant the minimum required #user permission
+        AccessControl.assignRole(accessControlState, caller, principal, #user);
+        repairedCount += 1;
+      };
+    };
+
+    if (repairedCount > 0) {
+      logAudit(
+        caller,
+        "REPAIR_STAFF_PERMISSIONS",
+        "Staff",
+        "bulk",
+        "Backfilled missing permissions for " # repairedCount.toText() # " staff profiles"
+      );
+    };
+
+    repairedCount;
+  };
+
+  // ============================================================================
+  // SCHOOL MANAGEMENT (Admin + Marketing, read access for others)
   // ============================================================================
 
   public shared ({ caller }) func createSchool(
@@ -391,7 +491,7 @@ actor {
     website : ?Text,
     studentCount : Nat,
   ) : async () {
-    requireRole(caller, #marketing);
+    requireAnyRole(caller, [#admin, #marketing]);
 
     if (schools.containsKey(id)) {
       Runtime.trap("School with this ID already exists");
@@ -436,7 +536,7 @@ actor {
     website : ?Text,
     studentCount : Nat,
   ) : async () {
-    requireRole(caller, #marketing);
+    requireAnyRole(caller, [#admin, #marketing]);
 
     switch (schools.get(id)) {
       case (null) { Runtime.trap("School not found") };
@@ -481,118 +581,57 @@ actor {
   };
 
   // ============================================================================
-  // PAYMENT MANAGEMENT (Accounts only)
+  // OUTSTANDING AMOUNTS (Admin sets, Marketing/Accounts view)
   // ============================================================================
 
-  public shared ({ caller }) func createPayment(
-    schoolId : Text,
-    amount : Nat,
-    dueDate : Int,
-  ) : async Text {
-    requireRole(caller, #accounts);
+  public shared ({ caller }) func setOutstandingAmount(schoolId : Text, amount : Nat) : async () {
+    requireAdmin(caller);
 
     if (not schools.containsKey(schoolId)) {
       Runtime.trap("School not found");
     };
 
-    paymentCounter += 1;
-    let id = "PAY-" # paymentCounter.toText();
-    let now = Time.now();
-
-    let payment : Payment = {
-      id;
+    let outstanding : OutstandingAmount = {
       schoolId;
       amount;
-      dueDate;
-      paid = false;
-      paymentProof = null;
-      createdTimestamp = now;
-      lastUpdateTimestamp = now;
+      timestamp = Time.now();
     };
 
-    payments.add(id, payment);
+    outstandingAmounts.add(schoolId, outstanding);
 
     logAudit(
       caller,
-      "CREATE_PAYMENT",
-      "Payment",
-      id,
-      "Created payment for school " # schoolId # ", amount: " # amount.toText()
+      "SET_OUTSTANDING_AMOUNT",
+      "OutstandingAmount",
+      schoolId,
+      "Set outstanding amount: " # amount.toText()
     );
-
-    id;
   };
 
-  public shared ({ caller }) func updatePayment(
-    id : Text,
-    amount : Nat,
-    dueDate : Int,
-    paid : Bool,
-  ) : async () {
-    requireRole(caller, #accounts);
+  public query ({ caller }) func getOutstandingAmount(schoolId : Text) : async Nat {
+    requireAnyRole(caller, [#admin, #marketing, #accounts]);
+    switch (outstandingAmounts.get(schoolId)) {
+      case (null) { 0 };
+      case (?outstanding) { outstanding.amount };
+    };
+  };
 
-    switch (payments.get(id)) {
-      case (null) { Runtime.trap("Payment not found") };
-      case (?existing) {
-        let updated : Payment = {
-          existing with
-          amount;
-          dueDate;
-          paid;
-          lastUpdateTimestamp = Time.now();
+  public query ({ caller }) func hasOutstandingAmount(schoolId : Text) : async Bool {
+    requireAnyRole(caller, [#admin, #marketing, #accounts]);
+    outstandingAmounts.containsKey(schoolId);
+  };
+
+  public query ({ caller }) func getOutstandingAmountsBySchoolIds(schoolIds : [Text]) : async [(Text, Nat)] {
+    requireAnyRole(caller, [#admin, #marketing, #accounts]);
+    schoolIds.map(
+      func(schoolId) {
+        let amount = switch (outstandingAmounts.get(schoolId)) {
+          case (null) { 0 };
+          case (?outstanding) { outstanding.amount };
         };
-        payments.add(id, updated);
-
-        logAudit(
-          caller,
-          "UPDATE_PAYMENT",
-          "Payment",
-          id,
-          "Updated payment, paid status: " # (if (paid) { "true" } else { "false" })
-        );
-      };
-    };
-  };
-
-  public shared ({ caller }) func uploadPaymentProof(
-    paymentId : Text,
-    proof : Storage.ExternalBlob,
-  ) : async () {
-    requireRole(caller, #accounts);
-
-    switch (payments.get(paymentId)) {
-      case (null) { Runtime.trap("Payment not found") };
-      case (?existing) {
-        let updated : Payment = {
-          existing with
-          paymentProof = ?proof;
-          lastUpdateTimestamp = Time.now();
-        };
-        payments.add(paymentId, updated);
-
-        logAudit(
-          caller,
-          "UPLOAD_PAYMENT_PROOF",
-          "Payment",
-          paymentId,
-          "Uploaded payment proof"
-        );
-      };
-    };
-  };
-
-  public query ({ caller }) func getPayment(id : Text) : async Payment {
-    requireAnyRole(caller, [#accounts, #marketing]);
-    switch (payments.get(id)) {
-      case (null) { Runtime.trap("Payment not found") };
-      case (?payment) { payment };
-    };
-  };
-
-  public query ({ caller }) func listPaymentsBySchool(schoolId : Text) : async [Payment] {
-    requireAnyRole(caller, [#accounts, #marketing]);
-    let filtered = payments.values().filter(func(p) { p.schoolId == schoolId });
-    filtered.toArray();
+        (schoolId, amount);
+      }
+    );
   };
 
   // ============================================================================
@@ -652,8 +691,59 @@ actor {
       action # "_PACKING_STATUS",
       "PackingStatus",
       schoolId,
-      "Packing status updated: packed=" # (if (packed) { "true" } else { "false" }) # 
+      "Packing status updated: packed=" # (if (packed) { "true" } else { "false" }) #
       ", dispatched=" # (if (dispatched) { "true" } else { "false" })
+    );
+  };
+
+  public shared ({ caller }) func createOrUpdatePackingCount(
+    schoolId : Text,
+    pClass : PackingClass,
+    theme : PackingTheme,
+    totalCount : Nat,
+    packedCount : Nat,
+    addOnCount : Nat,
+  ) : async () {
+    requireRole(caller, #packing);
+
+    if (not schools.containsKey(schoolId)) {
+      Runtime.trap("School not found");
+    };
+
+    let key = schoolId # "_" # PackingClass.toText(pClass) # "_" # PackingTheme.toText(theme);
+    let now = Time.now();
+
+    let count : PackingCount = switch (packingCounts.get(key)) {
+      case (null) {
+        {
+          classType = pClass;
+          theme;
+          totalCount;
+          packedCount;
+          addOnCount;
+          createdTimestamp = now;
+          lastUpdateTimestamp = now;
+        };
+      };
+      case (?existing) {
+        {
+          existing with
+          totalCount;
+          packedCount;
+          addOnCount;
+          lastUpdateTimestamp = now;
+        };
+      };
+    };
+
+    packingCounts.add(key, count);
+
+    logAudit(
+      caller,
+      "UPDATE_PACKING_COUNT",
+      "PackingCount",
+      schoolId,
+      "Updated count for class " # PackingClass.toText(pClass) # " and theme " # PackingTheme.toText(theme)
     );
   };
 
@@ -663,6 +753,35 @@ actor {
       case (null) { Runtime.trap("Packing status not found") };
       case (?status) { status };
     };
+  };
+
+  public query ({ caller }) func getPackingCount(
+    schoolId : Text,
+    pClass : PackingClass,
+    theme : PackingTheme,
+  ) : async PackingCount {
+    requireAnyRole(caller, [#packing, #marketing, #accounts]);
+    let key = schoolId # "_" # PackingClass.toText(pClass) # "_" # PackingTheme.toText(theme);
+
+    switch (packingCounts.get(key)) {
+      case (null) { Runtime.trap("Packing count not found") };
+      case (?count) { count };
+    };
+  };
+
+  public query ({ caller }) func getPackingCountsBySchool(schoolId : Text) : async [PackingCount] {
+    requireAnyRole(caller, [#packing, #marketing, #accounts]);
+    let filtered = packingCounts.values().filter(
+      func(count) {
+        count.classType == #preSchool or
+        count.classType == #class1 or
+        count.classType == #class2 or
+        count.classType == #class3 or
+        count.classType == #class4 or
+        count.classType == #class5
+      }
+    );
+    filtered.toArray();
   };
 
   public query ({ caller }) func listAllPackingStatuses() : async [PackingStatus] {
@@ -732,7 +851,7 @@ actor {
   };
 
   // ============================================================================
-  // ACADEMIC queries (Training creates, Academic responds)
+  // ACADEMIC QUERIES (Training creates, Academic responds)
   // ============================================================================
 
   public shared ({ caller }) func createAcademicQuery(
@@ -764,7 +883,7 @@ actor {
 
     logAudit(
       caller,
-      "CREATE_ACADEMIC_queries",
+      "CREATE_ACADEMIC_QUERIES",
       "AcademicQuery",
       id,
       "Created academic queries for school " # schoolId
@@ -793,10 +912,10 @@ actor {
 
         logAudit(
           caller,
-          "RESPOND_ACADEMIC_queries",
+          "RESPOND_ACADEMIC_QUERIES",
           "AcademicQuery",
           id,
-          "Responded to academic queries, status: " # 
+          "Responded to academic queries, status: " #
           (if (status == #resolved) { "resolved" } else { "open" })
         );
       };

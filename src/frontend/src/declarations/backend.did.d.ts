@@ -37,6 +37,21 @@ export interface FilterCriteria {
   'filterEntityId' : [] | [string],
   'filterInitiator' : [] | [Principal],
 }
+export type PackingClass = { 'class1' : null } |
+  { 'class2' : null } |
+  { 'class3' : null } |
+  { 'class4' : null } |
+  { 'class5' : null } |
+  { 'preSchool' : null };
+export interface PackingCount {
+  'theme' : PackingTheme,
+  'addOnCount' : bigint,
+  'totalCount' : bigint,
+  'lastUpdateTimestamp' : bigint,
+  'createdTimestamp' : bigint,
+  'classType' : PackingClass,
+  'packedCount' : bigint,
+}
 export interface PackingStatus {
   'kitCount' : bigint,
   'addOnCount' : bigint,
@@ -48,16 +63,11 @@ export interface PackingStatus {
   'createdTimestamp' : bigint,
   'packed' : boolean,
 }
-export interface Payment {
-  'id' : string,
-  'paid' : boolean,
-  'dueDate' : bigint,
-  'paymentProof' : [] | [ExternalBlob],
-  'lastUpdateTimestamp' : bigint,
-  'schoolId' : string,
-  'createdTimestamp' : bigint,
-  'amount' : bigint,
-}
+export type PackingTheme = { 'themeA' : null } |
+  { 'themeB' : null } |
+  { 'themeC' : null } |
+  { 'themeD' : null } |
+  { 'themeE' : null };
 export interface School {
   'id' : string,
   'city' : string,
@@ -138,11 +148,14 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createAcademicQuery' : ActorMethod<[string, string], string>,
+  'createOrUpdatePackingCount' : ActorMethod<
+    [string, PackingClass, PackingTheme, bigint, bigint, bigint],
+    undefined
+  >,
   'createOrUpdatePackingStatus' : ActorMethod<
     [string, bigint, bigint, boolean, boolean, [] | [string], string],
     undefined
   >,
-  'createPayment' : ActorMethod<[string, bigint, bigint], string>,
   'createSchool' : ActorMethod<
     [
       string,
@@ -171,12 +184,22 @@ export interface _SERVICE {
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getFilteredAuditLogs' : ActorMethod<[FilterCriteria], Array<AuditLog>>,
+  'getOutstandingAmount' : ActorMethod<[string], bigint>,
+  'getOutstandingAmountsBySchoolIds' : ActorMethod<
+    [Array<string>],
+    Array<[string, bigint]>
+  >,
+  'getPackingCount' : ActorMethod<
+    [string, PackingClass, PackingTheme],
+    PackingCount
+  >,
+  'getPackingCountsBySchool' : ActorMethod<[string], Array<PackingCount>>,
   'getPackingStatus' : ActorMethod<[string], PackingStatus>,
-  'getPayment' : ActorMethod<[string], Payment>,
   'getSchool' : ActorMethod<[string], School>,
   'getStaffProfile' : ActorMethod<[Principal], StaffProfile>,
   'getTrainingVisit' : ActorMethod<[string], TrainingVisit>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'hasOutstandingAmount' : ActorMethod<[string], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'listAcademicQueriesBySchool' : ActorMethod<[string], Array<AcademicQuery>>,
   'listAllAcademicQueries' : ActorMethod<[], Array<AcademicQuery>>,
@@ -184,14 +207,14 @@ export interface _SERVICE {
   'listAllPackingStatuses' : ActorMethod<[], Array<PackingStatus>>,
   'listAllSchools' : ActorMethod<[], Array<School>>,
   'listAllStaff' : ActorMethod<[], Array<StaffProfile>>,
-  'listPaymentsBySchool' : ActorMethod<[string], Array<Payment>>,
   'listTrainingVisitsBySchool' : ActorMethod<[string], Array<TrainingVisit>>,
+  'repairStaffProfilePermissions' : ActorMethod<[], bigint>,
   'respondToAcademicQuery' : ActorMethod<
     [string, string, { 'resolved' : null } | { 'open' : null }],
     undefined
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'updatePayment' : ActorMethod<[string, bigint, bigint, boolean], undefined>,
+  'setOutstandingAmount' : ActorMethod<[string, bigint], undefined>,
   'updateSchool' : ActorMethod<
     [
       string,
@@ -211,7 +234,6 @@ export interface _SERVICE {
     [Principal, string, StaffRole, string, string, string],
     undefined
   >,
-  'uploadPaymentProof' : ActorMethod<[string, ExternalBlob], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

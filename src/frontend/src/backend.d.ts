@@ -14,6 +14,15 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
+export interface PackingCount {
+    theme: PackingTheme;
+    addOnCount: bigint;
+    totalCount: bigint;
+    lastUpdateTimestamp: bigint;
+    createdTimestamp: bigint;
+    classType: PackingClass;
+    packedCount: bigint;
+}
 export interface AuditLog {
     id: string;
     action: string;
@@ -47,16 +56,6 @@ export interface FilterCriteria {
     filterDateRange?: [bigint, bigint];
     filterEntityId?: string;
     filterInitiator?: Principal;
-}
-export interface Payment {
-    id: string;
-    paid: boolean;
-    dueDate: bigint;
-    paymentProof?: ExternalBlob;
-    lastUpdateTimestamp: bigint;
-    schoolId: string;
-    createdTimestamp: bigint;
-    amount: bigint;
 }
 export interface TrainingVisit {
     id: string;
@@ -101,6 +100,21 @@ export interface UserProfile {
     contactNumber: string;
     department: string;
 }
+export enum PackingClass {
+    class1 = "class1",
+    class2 = "class2",
+    class3 = "class3",
+    class4 = "class4",
+    class5 = "class5",
+    preSchool = "preSchool"
+}
+export enum PackingTheme {
+    themeA = "themeA",
+    themeB = "themeB",
+    themeC = "themeC",
+    themeD = "themeD",
+    themeE = "themeE"
+}
 export enum StaffRole {
     admin = "admin",
     marketing = "marketing",
@@ -121,8 +135,8 @@ export enum Variant_resolved_open {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createAcademicQuery(schoolId: string, queries: string): Promise<string>;
+    createOrUpdatePackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme, totalCount: bigint, packedCount: bigint, addOnCount: bigint): Promise<void>;
     createOrUpdatePackingStatus(schoolId: string, kitCount: bigint, addOnCount: bigint, packed: boolean, dispatched: boolean, dispatchDetails: string | null, currentTheme: string): Promise<void>;
-    createPayment(schoolId: string, amount: bigint, dueDate: bigint): Promise<string>;
     createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
     createStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     createTrainingVisit(schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<string>;
@@ -131,12 +145,16 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getFilteredAuditLogs(criteria: FilterCriteria): Promise<Array<AuditLog>>;
+    getOutstandingAmount(schoolId: string): Promise<bigint>;
+    getOutstandingAmountsBySchoolIds(schoolIds: Array<string>): Promise<Array<[string, bigint]>>;
+    getPackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme): Promise<PackingCount>;
+    getPackingCountsBySchool(schoolId: string): Promise<Array<PackingCount>>;
     getPackingStatus(schoolId: string): Promise<PackingStatus>;
-    getPayment(id: string): Promise<Payment>;
     getSchool(id: string): Promise<School>;
     getStaffProfile(principal: Principal): Promise<StaffProfile>;
     getTrainingVisit(id: string): Promise<TrainingVisit>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    hasOutstandingAmount(schoolId: string): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     listAcademicQueriesBySchool(schoolId: string): Promise<Array<AcademicQuery>>;
     listAllAcademicQueries(): Promise<Array<AcademicQuery>>;
@@ -144,12 +162,11 @@ export interface backendInterface {
     listAllPackingStatuses(): Promise<Array<PackingStatus>>;
     listAllSchools(): Promise<Array<School>>;
     listAllStaff(): Promise<Array<StaffProfile>>;
-    listPaymentsBySchool(schoolId: string): Promise<Array<Payment>>;
     listTrainingVisitsBySchool(schoolId: string): Promise<Array<TrainingVisit>>;
+    repairStaffProfilePermissions(): Promise<bigint>;
     respondToAcademicQuery(id: string, response: string, status: Variant_resolved_open): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    updatePayment(id: string, amount: bigint, dueDate: bigint, paid: boolean): Promise<void>;
+    setOutstandingAmount(schoolId: string, amount: bigint): Promise<void>;
     updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
     updateStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
-    uploadPaymentProof(paymentId: string, proof: ExternalBlob): Promise<void>;
 }

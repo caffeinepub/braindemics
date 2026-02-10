@@ -1,21 +1,39 @@
+import { useNavigate } from '@tanstack/react-router';
 import { useListAllSchools, useListAllAuditLogs, useListAllStaff } from '../../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { School, Users, FileText, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { School, Users, FileText, Activity, DollarSign, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import DemoDataUnavailableState from '../../components/demo/DemoDataUnavailableState';
+import { isDemoActive } from '../../demo/demoSession';
 
 export default function AdminDashboardPage() {
-  const { data: schools, isLoading: schoolsLoading } = useListAllSchools();
-  const { data: staff, isLoading: staffLoading } = useListAllStaff();
-  const { data: auditLogs, isLoading: logsLoading } = useListAllAuditLogs();
+  const navigate = useNavigate();
+  const { data: schools, isLoading: schoolsLoading, isError: schoolsError } = useListAllSchools();
+  const { data: staff, isLoading: staffLoading, isError: staffError } = useListAllStaff();
+  const { data: auditLogs, isLoading: logsLoading, isError: logsError } = useListAllAuditLogs();
 
   const recentLogs = auditLogs?.slice(0, 10) || [];
+  const isDemo = isDemoActive();
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">System overview and recent activity</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-1">System overview and recent activity</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate({ to: '/admin/outstanding' })}>
+            <DollarSign className="h-4 w-4 mr-2" />
+            Outstanding Amounts
+          </Button>
+          <Button onClick={() => navigate({ to: '/marketing/schools/create' })}>
+            <Plus className="h-4 w-4 mr-2" />
+            Register School
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -28,6 +46,8 @@ export default function AdminDashboardPage() {
           <CardContent>
             {schoolsLoading ? (
               <Skeleton className="h-8 w-16" />
+            ) : schoolsError && isDemo ? (
+              <div className="text-sm text-muted-foreground">N/A</div>
             ) : (
               <div className="text-2xl font-bold">{schools?.length || 0}</div>
             )}
@@ -42,6 +62,8 @@ export default function AdminDashboardPage() {
           <CardContent>
             {staffLoading ? (
               <Skeleton className="h-8 w-16" />
+            ) : staffError && isDemo ? (
+              <div className="text-sm text-muted-foreground">N/A</div>
             ) : (
               <div className="text-2xl font-bold">{staff?.length || 0}</div>
             )}
@@ -56,6 +78,8 @@ export default function AdminDashboardPage() {
           <CardContent>
             {logsLoading ? (
               <Skeleton className="h-8 w-16" />
+            ) : logsError && isDemo ? (
+              <div className="text-sm text-muted-foreground">N/A</div>
             ) : (
               <div className="text-2xl font-bold">{auditLogs?.length || 0}</div>
             )}
@@ -78,6 +102,8 @@ export default function AdminDashboardPage() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
+          ) : logsError && isDemo ? (
+            <DemoDataUnavailableState message="Activity logs are not available in Demo/Preview Mode." />
           ) : recentLogs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No activity yet</p>
           ) : (

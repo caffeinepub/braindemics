@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import type { StaffRole } from '../../backend';
@@ -6,10 +7,6 @@ import {
   Users,
   FileText,
   School,
-  DollarSign,
-  Package,
-  GraduationCap,
-  BookOpen,
   MessageSquare,
 } from 'lucide-react';
 
@@ -21,6 +18,12 @@ interface RoleNavProps {
 
 export default function RoleNav({ role, mobile, onNavigate }: RoleNavProps) {
   const location = useLocation();
+  const [currentRole, setCurrentRole] = useState(role);
+
+  // Update when role prop changes (e.g., from demo role switching)
+  useEffect(() => {
+    setCurrentRole(role);
+  }, [role]);
 
   const navItems = {
     admin: [
@@ -48,7 +51,7 @@ export default function RoleNav({ role, mobile, onNavigate }: RoleNavProps) {
     ],
   };
 
-  const items = navItems[role] || [];
+  const items = navItems[currentRole] || [];
 
   return (
     <nav className={cn('py-6 px-3 space-y-1', mobile && 'pt-16')}>

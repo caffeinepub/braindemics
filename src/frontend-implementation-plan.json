@@ -1,454 +1,214 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Braindemics internal school operations app (frontend: II auth, RBAC guards, role dashboards, modules, PDFs, audit viewer)",
+  "title": "School search-driven Packing updates, outstanding amount editor, and fully functional Demo/Preview mode persistence",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Add a common login flow with Internet Identity, resolve staff role after sign-in, and redirect to the correct role dashboard; block unauthenticated access.",
+      "id": "REQ-29",
+      "summary": "Update Packing UI to allow searching/selecting a school, show selected school details read-only, and edit packing status for the selected school with a clear empty state when none is selected.",
       "acceptanceCriteria": [
-        "Unauthenticated users are always routed to the login page.",
-        "After Internet Identity sign-in, the app resolves the signed-in principal to exactly one of: Admin, Accounts, Packing, Marketing, Training, Academic.",
-        "After role resolution, the user is redirected to the correct role dashboard route.",
-        "If a principal is not registered as staff, the UI shows an English error state explaining access is not configured (and does not expose app data)."
+        "Packing page provides a school search/select control (searchable list) and selecting a school navigates/loads the packing editor for that school.",
+        "Selected school details (name, address, city/state, contact info, student count) are visible and non-editable on the Packing page.",
+        "If no school is selected, the Packing page shows a clear empty state prompting the user to search and select a school.",
+        "All user-facing labels/messages are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/LoginPage.tsx",
+          "path": "frontend/src/pages/packing/PackingSchoolsPage.tsx",
           "operation": "create",
-          "description": "Create a common login page using the existing Internet Identity hook and showing clear English states (idle/logging-in/error). After successful sign-in, trigger role resolution and redirect to the correct dashboard. Use the selected authorization component’s frontend guidance for login/logout cache clearing; verify the component's usage instructions before implementing."
+          "description": "Create a Packing landing page that shows a school search/select UI and an English empty state when no school is selected; selecting a school navigates to the existing per-school Packing editor. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useAuthSession.ts",
-          "operation": "create",
-          "description": "Add a frontend auth/session hook that composes (does not modify) the existing immutable hooks to expose: isAuthenticated, resolvedStaffRole (from backend user profile), and an access-not-configured state for unregistered principals. Use React Query for role resolution; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/AuthGate.tsx",
-          "operation": "create",
-          "description": "Create an auth gate wrapper that routes unauthenticated users to LoginPage and prevents any protected UI/data from rendering until authentication + role resolution completes. Use the selected authorization component’s AccessDenied/unauthorized UI guidance; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/packing/SchoolPackingPage.tsx",
           "operation": "modify",
-          "description": "Wire the LoginPage and AuthGate into the app so that all non-login routes are protected and role-based redirects occur after sign-in. Ensure logout clears React Query cache per authorization component guidance; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Guard frontend routes and UI actions based on the six staff roles, mirroring backend RBAC as the source of truth.",
-      "acceptanceCriteria": [
-        "Non-Marketing principals cannot create School records via any backend method.",
-        "Non-Marketing roles cannot edit School core fields (name, location, contact person, mobile, status); they may only edit fields explicitly allowed for their module (e.g., Accounts payment fields, Packing counts/status, Training visits/queries).",
-        "Admin can perform all actions across all modules.",
-        "Attempting an unauthorized backend call returns a clear error (not silent failure) and no data is changed.",
-        "Frontend routes for each module are inaccessible without the correct role (e.g., direct URL navigation is blocked)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/RequireRole.tsx",
-          "operation": "create",
-          "description": "Create a route wrapper component that blocks direct URL navigation when the resolved staff role is not permitted, showing an English access denied state and no sensitive data. Use the selected authorization component’s Access Control UI guidance; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/permissions.ts",
-          "operation": "create",
-          "description": "Define a central, typed permission map for the six roles (admin/marketing/accounts/packing/training/academic) covering allowed routes and allowed UI mutations (e.g., marketing can edit school core; accounts can manage payments; etc.)."
-        },
-        {
-          "path": "frontend/src/lib/errors.ts",
-          "operation": "create",
-          "description": "Add helpers to normalize and display backend authorization failures as safe, readable English UI messages (without leaking data), reused across modules."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wrap module routes with RequireRole and ensure unauthorized roles cannot reach protected screens, even via direct navigation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Provide Admin-only staff management UI to create/update staff profiles and associate a principal with a staff profile; use it for role resolution UX.",
-      "acceptanceCriteria": [
-        "Admin UI allows creating a staff profile and setting role/department/contact details.",
-        "A staff profile can be linked to the currently signed-in principal or an entered principal identifier (as supported by the platform).",
-        "On login, role resolution uses the backend staff mapping for the signed-in principal.",
-        "Non-admin users cannot access staff management screens or staff mutation APIs."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/StaffManagementPage.tsx",
-          "operation": "create",
-          "description": "Create an Admin-only staff management page with a staff table and create/update form (principal, full name, role, department, contact number, email) with validation and English error handling. Use shadcn-ui form/table primitives for a consistent UI; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useStaff.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for listing staff and creating/updating staff profiles, including safe surfacing of backend errors. Use the selected authorization component’s guidance for handling authorization failures gracefully; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/forms/StaffProfileForm.tsx",
-          "operation": "create",
-          "description": "Create a reusable validated form component for staff profile create/update (including an option to paste a principal identifier). Use shadcn-ui input/select/button components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register the staff management route under Admin routes and guard it with RequireRole(admin). Add navigation entry only visible to Admin."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Build role-specific dashboards for the six roles with summary cards, relevant lists/tables, and Admin activity feed from audit logs, using React Query with clear states.",
-      "acceptanceCriteria": [
-        "Each role has a dedicated dashboard route and layout.",
-        "Dashboards display summary cards and at least one table/list relevant to the role (e.g., pending payments for Accounts; pending dispatch for Packing; upcoming/overdue visits for Training; open academic queries for Academic).",
-        "Admin dashboard includes cross-department summaries and an activity feed sourced from audit logs.",
-        "All user-facing text is in English.",
-        "Dashboards load data via React Query and show clear loading/empty/error states."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Admin dashboard with cross-department summary cards and an audit-log-driven activity feed (recent actions) with loading/empty/error states. Use shadcn-ui cards/table components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Marketing dashboard with summary cards and a list/table of schools (including quick links to create/edit school) and indicators derived from shared school data. Use shadcn-ui components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Accounts dashboard showing pending/overdue payments list/table and summary cards derived from payment records. Use shadcn-ui components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Packing dashboard showing schools needing packing/dispatch attention and theme progress indicators from packing status. Use shadcn-ui components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Training dashboard showing upcoming/overdue visits and open queries raised by training with summary indicators. Use shadcn-ui components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create Academic dashboard showing open queries needing response, with filtering and a list/table. Use shadcn-ui components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useDashboards.ts",
-          "operation": "create",
-          "description": "Add React Query hooks that compose existing entity hooks to compute dashboard summaries/notifications from fetched data, with memoized derivations and consistent loading/error handling."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register all six dashboard routes and role-based default redirect targets after login; ensure each is guarded with RequireRole."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Implement Marketing module pages to create schools and edit school details (including student count) and ensure other roles can view the same school (read-only core details).",
-      "acceptanceCriteria": [
-        "Marketing can create a school with required fields and receives a generated School ID.",
-        "Marketing can edit school core details and student count.",
-        "Accounts/Packing/Training users can search for and open the same school by School ID and view the school core details (read-only).",
-        "Non-Marketing roles do not see UI controls for editing school core fields."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "operation": "create",
-          "description": "Create Marketing-only page to register a new school with validated form fields and clear English error messages. Use shadcn-ui form components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-          "operation": "create",
-          "description": "Create a shared school details page that shows core school fields read-only for non-Marketing roles and editable for Marketing/Admin (per frontend permission map), including student count updates. Use shadcn-ui layout and form components; verify the component's usage instructions before implementing."
+          "description": "Enhance the per-school Packing editor to display the selected school’s details in a read-only section (name, address, city/state, contact info, student count) above the editable packing controls; ensure all labels/messages are in English. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/schools/SchoolSearchPanel.tsx",
-          "operation": "create",
-          "description": "Create a reusable school search panel (search by School ID and/or name/city) used across modules, with English empty/error states."
-        },
-        {
-          "path": "frontend/src/hooks/useSchools.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for listing schools, fetching a school by ID, and creating/updating schools; include safe backend error surfacing and cache invalidation for immediate cross-role visibility."
-        },
-        {
-          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Register Marketing module routes (create school, school details) and ensure non-Marketing roles can reach read-only school details via guarded navigation, while edit controls remain hidden/disabled."
+          "description": "Extend the searchable schools list to support a 'select' mode (e.g., callback on row/action click) so Packing school selection can be performed in-page without relying solely on pre-existing route params. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/routeTree.tsx",
+          "operation": "modify",
+          "description": "Wire the new Packing school-select page into routing (e.g., /packing/schools) and ensure navigation flows from Packing module to the select page and then to the per-school editor. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-7",
-      "summary": "Implement Accounts module to view school details and manage payments, including upload/download of payment proof PDFs, without allowing school core edits.",
+      "id": "REQ-30",
+      "summary": "Add Class and Theme dropdowns to Packing status editing with the exact requested option sets, and ensure values are saved and reloaded per school (including demo-mode persistence).",
       "acceptanceCriteria": [
-        "Accounts can list/search schools and open a school payment view.",
-        "Accounts can create/update payment records for a school (amount, due date, status).",
-        "Accounts can upload a payment proof PDF and later download/view it.",
-        "Accounts cannot modify school core fields via UI or backend (RBAC enforced)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-          "operation": "create",
-          "description": "Create Accounts-only school payments view with school header (core fields read-only), payment list/table, and create/update payment form. Include clear loading/empty/error states in English."
-        },
-        {
-          "path": "frontend/src/components/payments/PaymentForm.tsx",
-          "operation": "create",
-          "description": "Create a validated form for payment create/update (amount, due date, paid/status), with inline English validation messages. Use shadcn-ui form primitives; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/pdfs/PdfUploadField.tsx",
-          "operation": "create",
-          "description": "Create a reusable PDF-only upload field component (accept application/pdf) used only for payment proof PDFs and classroom observation PDFs. Implement progress-friendly integration with ExternalBlob. Use the selected blob-storage component’s ExternalBlob upload patterns; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/payments/PaymentProofViewer.tsx",
-          "operation": "create",
-          "description": "Create a component to download/view a payment proof PDF using ExternalBlob direct URL or bytes as appropriate, with safe error handling in English. Use the selected blob-storage component capabilities; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/usePayments.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for listing payments by school, creating/updating payments, and uploading payment proof PDF (using ExternalBlob). Ensure cache invalidation so other screens reflect updates."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register Accounts module routes and guard them with RequireRole(accounts|admin). Ensure school core edit controls are hidden/disabled for Accounts everywhere they appear."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Implement Packing module to view school details and update packing status fields and curriculum theme, visible across departments.",
-      "acceptanceCriteria": [
-        "Packing can list/search schools and open a packing status view per school.",
-        "Packing can update kit count, add-ons, packing/dispatch status, dispatch details, and theme fields permitted for Packing.",
-        "Other roles can view the current theme and packing status where relevant (e.g., Marketing can view theme and payment status; Admin can view all).",
-        "All packing changes create corresponding audit log entries with actor and timestamp."
+        "Packing page shows a Class dropdown with options exactly: Beginner, Explorer, Master.",
+        "Packing page shows a Theme dropdown with options exactly: MYSELF, SHAPES, ANIMAL KINGDOM, PLANT TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS.",
+        "Saving packing status persists class + theme for the school and they are correctly displayed when revisiting the same school.",
+        "Backend enforces that only Packing role (or Admin) can update packing status, consistent with existing RBAC behavior."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "operation": "create",
-          "description": "Create Packing-only page to view school header (core fields read-only) and edit packing status (kit/add-on counts, packed/dispatched, dispatch details, current theme). Include English validation and clear loading/empty/error states."
-        },
-        {
-          "path": "frontend/src/components/packing/PackingStatusForm.tsx",
-          "operation": "create",
-          "description": "Create a validated form component for packing status updates, using shadcn-ui inputs/checkbox/select as appropriate for consistent UX; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/usePacking.ts",
-          "operation": "create",
-          "description": "Add React Query hooks to fetch and update packing status per school and to list packing statuses for dashboards/tables, with cache invalidation for cross-department visibility."
-        },
-        {
-          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Register Packing module routes and guard them with RequireRole(packing|admin). Add navigation entry only visible to Packing/Admin."
+          "description": "Replace/augment the current free-text theme input with two dropdowns: Class (Beginner/Explorer/Master) and Theme (MYSELF/SHAPES/ANIMAL KINGDOM/PLANT TREES AND FLOWERS/FRUITS AND VEGETABLES/FIVE ELEMENTS); load initial selections for the school and include them in the save action payload used by hooks. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/packing/packingOptions.ts",
+          "operation": "create",
+          "description": "Create shared constants for the exact Class and Theme option labels (English) used by the Packing UI to avoid drift and ensure the option sets remain exact. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add/adjust Packing-related query/mutation hooks so the UI can persist and reload class/theme selections per school (using backend capabilities when available and demo-local persistence when demo mode is active); keep React Query cache keys consistent and invalidate appropriately after saves. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-9",
-      "summary": "Implement Training module for training visits and raising academic queries, including upload/download of classroom observation PDFs.",
+      "id": "REQ-31",
+      "summary": "Add a labeled counts section on the Packing page to edit and save counts associated with the selected Class and Theme, with validation and persistence/reload behavior (including demo mode).",
       "acceptanceCriteria": [
-        "Training can create and view training visit entries per school with validated required fields.",
-        "Training can upload a classroom observation PDF to a visit and download/view it later.",
-        "Training can raise an academic query linked to a school (type, description, initial status).",
-        "Training cannot edit school core details (RBAC enforced)."
+        "Packing page includes a dedicated counts section that is clearly labeled in English.",
+        "Counts are editable inputs and are saved together with the packing status update for the school.",
+        "After saving, a refresh/re-open of the page shows the same saved counts for that school along with the saved class/theme selections.",
+        "Validation prevents negative values and displays a clear English error message when invalid input is provided."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/training/SchoolTrainingPage.tsx",
-          "operation": "create",
-          "description": "Create Training-only page with school header (read-only core fields), visits list/table, visit create form, and a section to raise academic queries linked to the school. Include English validation and clear states."
-        },
-        {
-          "path": "frontend/src/components/training/TrainingVisitForm.tsx",
-          "operation": "create",
-          "description": "Create a validated form for creating training visits (visit date, reason, visiting person, contact person mobile, observations) with classroom observation PDF upload limited to this module’s requirement. Reuse PdfUploadField and ExternalBlob integration from blob-storage; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/training/ClassroomObservationViewer.tsx",
-          "operation": "create",
-          "description": "Create a PDF viewer/downloader for classroom observation proof attached to a visit, using ExternalBlob direct URL/bytes with safe English error states. Verify the blob-storage component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/queries/AcademicQueryCreateForm.tsx",
-          "operation": "create",
-          "description": "Create a validated form for raising an academic query linked to a school (type/description as supported by backend capability), with clear English errors."
-        },
-        {
-          "path": "frontend/src/hooks/useTraining.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for listing visits by school and creating visits (including optional PDF via ExternalBlob), and for creating academic queries. Ensure cache invalidation so Academic/Training views reflect updates."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/packing/SchoolPackingPage.tsx",
           "operation": "modify",
-          "description": "Register Training module routes and guard them with RequireRole(training|admin). Ensure no school core editing controls appear for Training."
+          "description": "Add a clearly labeled English 'Counts' section tied to the currently selected Class and Theme; include editable numeric inputs, prevent negative values, and show an English validation error message; save counts together with the school’s packing update flow and reload them on revisit. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Implement React Query hooks for reading and writing Packing counts for a school keyed by Class+Theme, including demo-mode local persistence and appropriate cache invalidation so revisiting/refreshing reloads the saved values. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-10",
-      "summary": "Implement Academic module to list/filter academic queries, respond, and update status with auditable lifecycle reflected in the UI.",
+      "id": "REQ-32",
+      "summary": "Add an Admin-only workflow to search/select a school and set/update its Outstanding Amount, showing selected school details read-only and guarding access in the UI.",
       "acceptanceCriteria": [
-        "Academic can see a list of queries with filtering by status, school, and type.",
-        "Academic can add a response and update query status.",
-        "Training can see updates to the queries they raised (read-only for response fields unless specified otherwise).",
-        "All query updates create audit log entries with actor, timestamp, old value(s), and new value(s) as appropriate."
+        "Admin area provides a school search/select UI and a view for the selected school that shows school details read-only.",
+        "Admin can input and save an Outstanding Amount for the selected school.",
+        "Outstanding Amount is persisted in backend state and reloaded correctly for the selected school.",
+        "Non-admin users cannot access the admin outstanding editor (route guarded in frontend, and backend rejects unauthorized updates).",
+        "All user-facing labels/messages are in English (e.g., “Outstanding Amount (₹)”)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/academic/AcademicQueriesPage.tsx",
+          "path": "frontend/src/pages/admin/OutstandingAmountPage.tsx",
           "operation": "create",
-          "description": "Create Academic-only queries page with filtering controls (status, school, type as supported), a queries table, and a query detail/response panel. Include loading/empty/error states in English."
+          "description": "Create an Admin Outstanding Amount editor page with a school search/select UI, a read-only school details panel, and an editable 'Outstanding Amount (₹)' field that saves and reloads values; ensure all user-facing text is English. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/queries/AcademicQueryResponseForm.tsx",
-          "operation": "create",
-          "description": "Create a validated response/status update form for Academic users, with safe backend error surfacing and disabled state when unauthorized."
-        },
-        {
-          "path": "frontend/src/pages/training/TrainingQueriesPage.tsx",
-          "operation": "create",
-          "description": "Create Training read-only view of academic queries relevant to a school (or global if needed for workflow), showing responses/status updates without allowing edits to response fields."
-        },
-        {
-          "path": "frontend/src/hooks/useAcademicQueries.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for listing queries (all and by school), fetching a query, and responding/updating status, with cache invalidation for both Academic and Training screens."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Register Academic and Training query routes and guard them appropriately with RequireRole(academic|admin) for mutation screens and RequireRole(training|admin) for read-only training views."
-        }
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "summary": "Add reusable tables with filtering/search for key entities and ensure all data entry is validated with clear English error handling.",
-      "acceptanceCriteria": [
-        "Each major list view includes a search input and at least one filter relevant to the entity (e.g., status).",
-        "Forms validate required fields and show inline English validation messages.",
-        "Backend errors are surfaced in the UI in a safe, readable manner.",
-        "List views display empty states when no results match filters."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/tables/DataTable.tsx",
-          "operation": "create",
-          "description": "Create a reusable table component with client-side search and filter UI primitives (and optional pagination UI), used by schools/payments/packing/visits/queries/audit logs. Use shadcn-ui table/input/select components for consistency; verify the component's usage instructions before implementing."
+          "description": "Add outstanding-amount query/mutation hooks (get/has/set) with demo-mode local persistence support and React Query invalidation so Admin saves immediately reflect across modules. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/tables/TableFilters.tsx",
-          "operation": "create",
-          "description": "Create shared filter/search controls (search box, status filter select, date range inputs where applicable) with accessible labels and English helper/error text."
-        },
-        {
-          "path": "frontend/src/lib/validation.ts",
-          "operation": "create",
-          "description": "Add shared validation helpers for required fields, dates, numeric inputs, and PDF-only constraints, returning English messages for inline display."
-        },
-        {
-          "path": "frontend/src/components/common/QueryStates.tsx",
-          "operation": "create",
-          "description": "Create shared components for loading/empty/error states to standardize English messaging and reduce duplication across list/detail screens."
-        },
-        {
-          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "path": "frontend/src/components/schools/SchoolSearchPanel.tsx",
           "operation": "modify",
-          "description": "Adopt shared validation and QueryStates patterns; add search/filter where a list is shown."
+          "description": "Support a selection workflow usable by the Admin outstanding editor (e.g., allow passing an onSelect handler and optionally hide the external-link action column) while keeping existing usages intact. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
+          "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Adopt DataTable + filters for payment list and ensure forms show inline English validation and backend error messages."
-        }
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "summary": "Provide an Admin-facing audit/activity log viewer with filtering by actor, entity type, school ID, and date range; restrict access to Admin only.",
-      "acceptanceCriteria": [
-        "Every mutation endpoint writes an audit log entry including: actor (principal), role (at time of action if available), entity type, entity ID (including School ID), action type, timestamp, and a summary of changed fields.",
-        "Admin can view an audit log page with pagination and filtering controls.",
-        "Non-admin users cannot access the audit log viewer (except potentially their own actions if explicitly added later; not required now)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/AuditLogPage.tsx",
-          "operation": "create",
-          "description": "Create an Admin-only audit log viewer page with filters (actor, entity type, school/entity ID, date range) and a results table. Include English loading/empty/error states. Use shadcn-ui components for filters/table; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useAuditLogs.ts",
-          "operation": "create",
-          "description": "Add React Query hooks to fetch audit logs (all and filtered), with filter state serialized into query keys, and safe error handling for authorization failures. Use authorization component guidance for unauthorized UI handling; verify the component's usage instructions before implementing."
+          "description": "Add and wire an admin-only route for the Outstanding Amount editor and guard it using the app’s role-based authorization patterns (ensure non-admins are redirected or shown an access denied state). Use the authorization component’s RBAC patterns to drive the guard and UI behavior; verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
           "operation": "modify",
-          "description": "Integrate a recent activity feed preview that links to the full AuditLogPage and shares consistent formatting/time display."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register the audit log route and guard it with RequireRole(admin). Add an Admin-only navigation entry."
+          "description": "Add an Admin-accessible navigation entry (button/link) to the Outstanding Amount editor page so the workflow is discoverable; keep labels in English. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-13",
-      "summary": "Apply a clean, consistent, responsive (desktop-first) visual theme across dashboards, forms, and tables, avoiding a blue/purple-dominant default theme.",
+      "id": "REQ-33",
+      "summary": "Display each school’s Outstanding Amount read-only in the Marketing module when viewing/selecting a school, with a consistent 'Not set' (or 0) state.",
       "acceptanceCriteria": [
-        "UI uses a consistent spacing/typography/color system across screens.",
-        "Layouts work well on common desktop widths and remain usable on smaller screens without horizontal scrolling for primary workflows.",
-        "No blue/purple-dominant theme is used by default."
+        "Marketing users can see a read-only Outstanding Amount value for a selected school (wherever school details are shown in the Marketing module).",
+        "If no outstanding is set yet for a school, the UI shows 0 or an explicit English “Not set” state (choose one and apply consistently).",
+        "Outstanding Amount displayed in Marketing matches the value saved from the Admin workflow."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "path": "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Show a read-only Outstanding Amount section on the school details view (used by Marketing when viewing a school); display an explicit English 'Not set' state when no outstanding exists, otherwise show the amount (₹) consistently. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Ensure outstanding amount hooks support both: (1) checking whether an amount is set and (2) retrieving the amount; use consistent query keys so Marketing views reflect Admin updates via cache invalidation. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "summary": "Make Demo/Preview Mode core flows work end-to-end using demo-local persisted data: school registration, cross-page reflection, outstanding updates, and packing edits with reload persistence and graceful errors.",
+      "acceptanceCriteria": [
+        "In Demo/Preview Mode, creating a school from the Marketing school registration page adds the school to the demo school list and it becomes searchable/visible across dashboards and modules without reload issues.",
+        "In Demo/Preview Mode, Admin can set Outstanding Amount for a school and Marketing can see the same value for that school.",
+        "In Demo/Preview Mode, Packing edits (class/theme + counts + packing flags/dispatch details) can be saved and then reloaded, and the demo data persists across navigation (and optionally across browser refresh via localStorage).",
+        "Demo/Preview Mode does not hard-crash on any of these pages; failures show clear English messages only when truly necessary.",
+        "Demo-mode data behavior is consistent across: school list queries, school detail queries, packing status queries, and outstanding queries."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/demo/demoDataStore.ts",
           "operation": "create",
-          "description": "Create a shared desktop-first app layout (header + sidebar/nav + content) used by all authenticated routes, with responsive collapse behavior for smaller screens. Use shadcn-ui layout primitives where appropriate; verify the component's usage instructions before implementing."
+          "description": "Implement a demo-local persistence layer (localStorage-backed) for schools, outstanding amounts, packing status, and packing class/theme/counts so demo flows work end-to-end across navigation and optional refresh. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/layout/RoleNav.tsx",
-          "operation": "create",
-          "description": "Create a role-aware navigation component that shows only permitted modules/routes for the current staff role, ensuring a consistent information architecture and reducing accidental unauthorized actions."
-        },
-        {
-          "path": "frontend/tailwind.config.js",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Adjust/confirm theme tokens to a neutral/green/gray-forward palette (avoiding blue/purple-dominant defaults) and ensure consistent spacing/typography utilities for dashboards/forms/tables."
+          "description": "Update school, packing, and outstanding queries/mutations to use demoDataStore when demo mode is active (instead of returning empty arrays/throwing), ensuring consistent behavior and React Query cache invalidation across modules. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
           "operation": "modify",
-          "description": "Update global CSS variables and base styles to enforce a coherent theme (colors/typography/spacing) and improve table/form readability; ensure no blue/purple-dominant defaults."
+          "description": "Enable school registration in Demo/Preview Mode by removing demo-mode mutation blocking for this flow and relying on demo-backed mutations; ensure created schools become searchable immediately across modules and keep all UI text in English. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/packing/SchoolPackingPage.tsx",
           "operation": "modify",
-          "description": "Wrap authenticated routes with AppLayout to ensure consistent theming and responsive layout across all screens."
+          "description": "Enable saving packing edits in Demo/Preview Mode (class/theme, counts, packing flags, dispatch details) via demo-backed mutations; ensure reload/revisit shows saved demo values and errors are clear English messages only when necessary. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Outstanding Amount admin editor reads/writes demo-local values in Demo/Preview Mode and updates reflect immediately in Marketing/school details views. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/schools/SchoolSearchPanel.tsx",
+          "operation": "modify",
+          "description": "Ensure the schools search panel works in Demo/Preview Mode by consuming demo-backed school lists and updating results immediately after demo school creation, without reload issues. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "summary": "Provide an Admin-accessible UI entry point to register schools (create school) in non-demo mode, reusing existing school registration behavior and ensuring new schools appear immediately across modules.",
+      "acceptanceCriteria": [
+        "Backend allows Admin role to create schools (in addition to existing Marketing capability) while keeping other roles blocked.",
+        "Frontend provides an Admin-accessible entry point to create/register a school (reusing the existing school registration form behavior and validation), and the new school appears in school searches/lists after creation.",
+        "RBAC remains enforced: non-admin, non-marketing users cannot create schools (backend rejects, frontend hides/blocks)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/routeTree.tsx",
+          "operation": "modify",
+          "description": "Add an Admin route to access school registration (reusing the existing school creation page/component) and guard it using role-based authorization checks; ensure unauthorized roles cannot navigate to it. Use the authorization component’s RBAC patterns to drive the guard and UI behavior; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add an English-labeled Admin-only button/link to 'Register School' that navigates to the Admin school creation entry point. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "operation": "modify",
+          "description": "Refactor to support reuse from both Marketing and Admin entry points (e.g., configurable post-create redirect) while keeping the same validation and ensuring school lists/search results refresh after creation in non-demo mode. Verify the component's usage instructions before implementing."
         }
       ]
     }

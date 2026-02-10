@@ -2,11 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-secure-authentication-using-internet-identity-and-a-common-login-page-that-signs-the-user-in-and-then-redirects-them-to-the-correct-role-dashboard-based-on-their-staff-role",
-      "featureTitle": "Implement secure authentication using Internet Identity and a common login page that signs the user in and then redirects them to the correct role dashboard based on their staff role.",
+      "featureId": "feature-update-the-packing-module-ui-to-support-searching-and-selecting-a-school-instead-of-relying-only-on-a-pre-selected-route-param-then-show-the-selected-school-s-details-as-read-only-and-allow-updating-packing-status-for-that-selected-school",
+      "featureTitle": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/pages/packing/PackingSchoolsPage.tsx",
+        "frontend/src/pages/packing/SchoolPackingPage.tsx",
+        "frontend/src/routeTree.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -18,15 +19,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-29"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-enforce-strict-role-based-access-control-rbac-in-the-backend-for-every-mutation-and-sensitive-read-according-to-the-six-roles-the-frontend-must-also-guard-routes-and-disable-hide-unauthorized-actions-but-backend-enforcement-is-the-source-of-truth",
-      "featureTitle": "Enforce strict role-based access control (RBAC) in the backend for every mutation and sensitive read according to the six roles; the frontend must also guard routes and disable/hide unauthorized actions, but backend enforcement is the source of truth.",
+      "featureId": "feature-extend-packing-status-editing-to-include-two-dropdowns-for-class-and-theme-with-the-exact-option-sets-requested-and-ensure-the-selected-values-are-saved-and-reloaded-for-each-school",
+      "featureTitle": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/packing/SchoolPackingPage.tsx",
+        "frontend/src/pages/packing/packingOptions.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -38,106 +41,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-30"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-staff-management-and-role-assignment-so-that-admin-can-create-update-staff-records-and-associate-an-internet-identity-principal-with-a-staff-profile-name-role-department-contact-details-use-this-mapping-to-resolve-roles-after-login",
-      "featureTitle": "Implement Staff management and role assignment so that Admin can create/update staff records and associate an Internet Identity principal with a staff profile (name, role, department, contact details); use this mapping to resolve roles after login.",
+      "featureId": "feature-add-a-counts-section-on-the-packing-page-for-the-selected-school-that-allows-entering-and-saving-counts-associated-with-the-selected-class-and-theme-and-ensure-these-values-are-persisted-and-reloaded",
+      "featureTitle": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/admin/StaffManagementPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-build-role-specific-dashboards-admin-accounts-packing-marketing-training-academic-with-summary-cards-relevant-tables-and-notifications-derived-from-the-shared-school-data-and-each-department-s-workflow-state",
-      "featureTitle": "Build role-specific dashboards (Admin, Accounts, Packing, Marketing, Training, Academic) with summary cards, relevant tables, and notifications derived from the shared school data and each department’s workflow state.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
-        "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
-        "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-        "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
-        "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
-        "frontend/src/pages/dashboards/TrainingDashboardPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-marketing-module-pages-to-register-new-schools-and-edit-school-details-including-student-count-updates-ensure-created-schools-become-visible-to-other-roles-immediately-via-the-shared-school-id",
-      "featureTitle": "Implement Marketing module pages to register new schools and edit school details, including student count updates; ensure created schools become visible to other roles immediately via the shared School ID.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/schools/SchoolSearchPanel.tsx",
-        "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-        "frontend/src/pages/schools/SchoolDetailsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-accounts-module-to-view-school-details-and-manage-payments-update-outstanding-payments-payment-status-due-dates-amounts-as-needed-and-upload-download-payment-proof-pdfs-prevent-accounts-from-editing-school-core-details",
-      "featureTitle": "Implement Accounts module to view school details and manage payments: update outstanding payments, payment status, due dates/amounts as needed, and upload/download payment proof PDFs; prevent Accounts from editing school core details.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/accounts/SchoolPaymentsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-packing-module-to-view-school-details-and-update-packing-status-student-kit-count-add-on-count-packing-dispatch-status-and-dispatch-details-and-current-curriculum-theme-ensure-updates-are-visible-to-other-departments",
-      "featureTitle": "Implement Packing module to view school details and update packing status: student kit count, add-on count, packing/dispatch status and dispatch details, and current curriculum theme; ensure updates are visible to other departments.",
-      "files": [
-        "frontend/src/App.tsx",
+        "frontend/src/hooks/useQueries.ts",
         "frontend/src/pages/packing/SchoolPackingPage.tsx"
       ],
       "components": [
@@ -150,16 +62,18 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-8"
+        "REQ-31"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-training-module-to-log-training-visits-and-raise-academic-queries-record-visit-date-reason-visiting-person-contact-person-mobile-number-observations-upload-download-classroom-observation-pdfs-and-create-academic-queries-linked-to-the-school",
-      "featureTitle": "Implement Training module to log training visits and raise academic queries: record visit date, reason, visiting person, contact person mobile number, observations, upload/download classroom observation PDFs, and create academic queries linked to the school.",
+      "featureId": "feature-add-an-admin-workflow-to-search-and-select-a-school-and-set-update-an-outstanding-amount-for-the-selected-school-selected-school-details-must-be-displayed-read-only-alongside-the-outstanding-field",
+      "featureTitle": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/training/SchoolTrainingPage.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+        "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+        "frontend/src/routeTree.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -171,17 +85,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-9"
+        "REQ-32"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-academic-module-to-view-academic-queries-raised-by-trainers-respond-to-them-and-update-query-status-ensure-query-lifecycle-and-responses-are-fully-auditable",
-      "featureTitle": "Implement Academic module to view academic queries raised by trainers, respond to them, and update query status; ensure query lifecycle and responses are fully auditable.",
+      "featureId": "feature-expose-the-school-s-outstanding-amount-in-the-marketing-module-when-viewing-selecting-any-school-so-marketing-can-see-the-outstanding-value-set-by-admin-and-or-accounts",
+      "featureTitle": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/academic/AcademicQueriesPage.tsx",
-        "frontend/src/pages/training/TrainingQueriesPage.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/schools/SchoolDetailsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -193,16 +106,19 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-10"
+        "REQ-33"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-global-tables-with-filtering-and-search-for-key-lists-schools-payments-packing-statuses-training-visits-academic-queries-and-ensure-all-data-entry-is-form-based-with-validation-and-clear-english-error-handling",
-      "featureTitle": "Add global tables with filtering and search for key lists (schools, payments, packing statuses, training visits, academic queries) and ensure all data entry is form-based with validation and clear English error handling.",
+      "featureId": "feature-make-core-flows-work-end-to-end-in-demo-preview-mode-without-backend-access-school-registration-school-reflection-across-pages-outstanding-updates-and-packing-edits-must-all-function-using-demo-local-persisted-data",
+      "featureTitle": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
       "files": [
-        "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-        "frontend/src/pages/marketing/SchoolCreatePage.tsx"
+        "frontend/src/demo/demoDataStore.ts",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+        "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+        "frontend/src/pages/packing/SchoolPackingPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -214,17 +130,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-11"
+        "REQ-34"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-a-comprehensive-audit-logging-system-for-all-create-update-actions-across-modules-schools-staff-payments-packing-visits-queries-and-provide-an-admin-facing-activity-audit-log-viewer-with-filtering-by-actor-entity-type-school-id-and-date-range",
-      "featureTitle": "Implement a comprehensive audit logging system for all create/update actions across modules (schools, staff, payments, packing, visits, queries) and provide an Admin-facing activity/audit log viewer with filtering by actor, entity type, school ID, and date range.",
+      "featureId": "feature-allow-admin-to-register-schools-create-school-in-non-demo-mode-and-ensure-newly-created-schools-appear-immediately-across-modules-wherever-school-search-listing-is-used",
+      "featureTitle": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/admin/AuditLogPage.tsx",
-        "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
+        "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+        "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+        "frontend/src/routeTree.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -236,31 +152,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-12"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-deliver-a-clean-simple-functional-responsive-desktop-first-ui-with-a-coherent-visual-theme-applied-consistently-across-dashboards-forms-and-tables",
-      "featureTitle": "Deliver a clean, simple, functional, responsive (desktop-first) UI with a coherent visual theme applied consistently across dashboards, forms, and tables.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/layout/AppLayout.tsx",
-        "frontend/src/components/layout/RoleNav.tsx",
-        "frontend/src/index.css",
-        "frontend/tailwind.config.js"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-13"
+        "REQ-35"
       ],
       "confidence": "high"
     }

@@ -10,14 +10,19 @@ import TrainingDashboardPage from './pages/dashboards/TrainingDashboardPage';
 import AcademicDashboardPage from './pages/dashboards/AcademicDashboardPage';
 import StaffManagementPage from './pages/admin/StaffManagementPage';
 import AuditLogPage from './pages/admin/AuditLogPage';
+import OutstandingAmountPage from './pages/admin/OutstandingAmountPage';
 import SchoolCreatePage from './pages/marketing/SchoolCreatePage';
 import SchoolDetailsPage from './pages/schools/SchoolDetailsPage';
 import SchoolPaymentsPage from './pages/accounts/SchoolPaymentsPage';
+import PackingSchoolsPage from './pages/packing/PackingSchoolsPage';
 import SchoolPackingPage from './pages/packing/SchoolPackingPage';
 import SchoolTrainingPage from './pages/training/SchoolTrainingPage';
 import TrainingQueriesPage from './pages/training/TrainingQueriesPage';
 import AcademicQueriesPage from './pages/academic/AcademicQueriesPage';
 import { getCallerUserProfileQuery } from './hooks/useQueries';
+import { isDemoActive, getDemoRole } from './demo/demoSession';
+import { createDemoProfile } from './demo/demoProfile';
+import { getDashboardRoute } from './demo/demoRoutes';
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -38,6 +43,16 @@ const authenticatedRoute = createRoute({
   id: 'authenticated',
   component: AppLayout,
   beforeLoad: async ({ context }) => {
+    // Check for demo mode first
+    if (isDemoActive()) {
+      const demoRole = getDemoRole();
+      if (demoRole) {
+        const demoProfile = createDemoProfile(demoRole);
+        return { profile: demoProfile };
+      }
+    }
+    
+    // Non-demo mode: require backend profile
     const queryClient = (context as RouterContext).queryClient;
     const profile = await queryClient.ensureQueryData(getCallerUserProfileQuery());
     
@@ -53,6 +68,15 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: async ({ context }) => {
+    // Check for demo mode first
+    if (isDemoActive()) {
+      const demoRole = getDemoRole();
+      if (demoRole) {
+        throw redirect({ to: getDashboardRoute(demoRole) });
+      }
+    }
+    
+    // Non-demo mode: require backend profile
     const queryClient = (context as RouterContext).queryClient;
     const profile = await queryClient.ensureQueryData(getCallerUserProfileQuery());
     
@@ -92,6 +116,12 @@ const auditLogRoute = createRoute({
   component: AuditLogPage,
 });
 
+const outstandingAmountRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/admin/outstanding',
+  component: OutstandingAmountPage,
+});
+
 // Marketing routes
 const marketingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -123,6 +153,12 @@ const packingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/packing/dashboard',
   component: PackingDashboardPage,
+});
+
+const packingSchoolsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/packing/schools',
+  component: PackingSchoolsPage,
 });
 
 const schoolPackingRoute = createRoute({
@@ -177,11 +213,13 @@ export const routeTree = rootRoute.addChildren([
     adminDashboardRoute,
     staffManagementRoute,
     auditLogRoute,
+    outstandingAmountRoute,
     marketingDashboardRoute,
     schoolCreateRoute,
     accountsDashboardRoute,
     schoolPaymentsRoute,
     packingDashboardRoute,
+    packingSchoolsRoute,
     schoolPackingRoute,
     trainingDashboardRoute,
     schoolTrainingRoute,

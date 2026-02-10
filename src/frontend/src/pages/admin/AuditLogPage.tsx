@@ -1,26 +1,38 @@
 import { useState } from 'react';
 import { useListAllAuditLogs } from '../../hooks/useQueries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import DemoDataUnavailableState from '../../components/demo/DemoDataUnavailableState';
+import { isDemoActive } from '../../demo/demoSession';
 
 export default function AuditLogPage() {
-  const { data: logs, isLoading } = useListAllAuditLogs();
+  const { data: logs, isLoading, isError } = useListAllAuditLogs();
   const [searchTerm, setSearchTerm] = useState('');
-  const [entityTypeFilter, setEntityTypeFilter] = useState('');
+  const [entityTypeFilter, setEntityTypeFilter] = useState<string>('all');
+
+  const isDemo = isDemoActive();
 
   const filteredLogs = logs?.filter((log) => {
     const matchesSearch =
+      searchTerm === '' ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.entityId.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesEntityType = !entityTypeFilter || log.entityType === entityTypeFilter;
+    const matchesType = entityTypeFilter === 'all' || log.entityType === entityTypeFilter;
 
-    return matchesSearch && matchesEntityType;
+    return matchesSearch && matchesType;
   });
 
   const entityTypes = Array.from(new Set(logs?.map((log) => log.entityType) || []));
@@ -34,51 +46,43 @@ export default function AuditLogPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>Activity Log</CardTitle>
+          <CardDescription>Filter and search through system audit logs</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search by action, details, or entity ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="entityType">Entity Type</Label>
-              <select
-                id="entityType"
-                value={entityTypeFilter}
-                onChange={(e) => setEntityTypeFilter(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">All Types</option>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Search by action, details, or entity ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
+            />
+            <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
                 {entityTypes.map((type) => (
-                  <option key={type} value={type}>
+                  <SelectItem key={type} value={type}>
                     {type}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Log</CardTitle>
-        </CardHeader>
-        <CardContent>
           {isLoading ? (
-            <div className="space-y-2">
-              {[...Array(10)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filteredLogs && filteredLogs.length > 0 ? (
+          ) : isError && isDemo ? (
+            <DemoDataUnavailableState message="Audit logs are not available in Demo/Preview Mode." />
+          ) : !filteredLogs || filteredLogs.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              {searchTerm || entityTypeFilter !== 'all' ? 'No matching logs found' : 'No audit logs yet'}
+            </p>
+          ) : (
             <div className="border rounded-lg">
               <Table>
                 <TableHeader>
@@ -97,7 +101,7 @@ export default function AuditLogPage() {
                       <TableCell>{log.entityType}</TableCell>
                       <TableCell className="font-mono text-xs">{log.entityId}</TableCell>
                       <TableCell className="max-w-md truncate">{log.details}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-sm">
                         {formatDistanceToNow(Number(log.timestamp) / 1000000, { addSuffix: true })}
                       </TableCell>
                     </TableRow>
@@ -105,10 +109,6 @@ export default function AuditLogPage() {
                 </TableBody>
               </Table>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              {searchTerm || entityTypeFilter ? 'No logs match your filters' : 'No audit logs yet'}
-            </p>
           )}
         </CardContent>
       </Card>

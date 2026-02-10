@@ -24,6 +24,21 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const PackingClass = IDL.Variant({
+  'class1' : IDL.Null,
+  'class2' : IDL.Null,
+  'class3' : IDL.Null,
+  'class4' : IDL.Null,
+  'class5' : IDL.Null,
+  'preSchool' : IDL.Null,
+});
+export const PackingTheme = IDL.Variant({
+  'themeA' : IDL.Null,
+  'themeB' : IDL.Null,
+  'themeC' : IDL.Null,
+  'themeD' : IDL.Null,
+  'themeE' : IDL.Null,
+});
 export const StaffRole = IDL.Variant({
   'admin' : IDL.Null,
   'marketing' : IDL.Null,
@@ -65,6 +80,15 @@ export const FilterCriteria = IDL.Record({
   'filterEntityId' : IDL.Opt(IDL.Text),
   'filterInitiator' : IDL.Opt(IDL.Principal),
 });
+export const PackingCount = IDL.Record({
+  'theme' : PackingTheme,
+  'addOnCount' : IDL.Nat,
+  'totalCount' : IDL.Nat,
+  'lastUpdateTimestamp' : IDL.Int,
+  'createdTimestamp' : IDL.Int,
+  'classType' : PackingClass,
+  'packedCount' : IDL.Nat,
+});
 export const PackingStatus = IDL.Record({
   'kitCount' : IDL.Nat,
   'addOnCount' : IDL.Nat,
@@ -75,16 +99,6 @@ export const PackingStatus = IDL.Record({
   'schoolId' : IDL.Text,
   'createdTimestamp' : IDL.Int,
   'packed' : IDL.Bool,
-});
-export const Payment = IDL.Record({
-  'id' : IDL.Text,
-  'paid' : IDL.Bool,
-  'dueDate' : IDL.Int,
-  'paymentProof' : IDL.Opt(ExternalBlob),
-  'lastUpdateTimestamp' : IDL.Int,
-  'schoolId' : IDL.Text,
-  'createdTimestamp' : IDL.Int,
-  'amount' : IDL.Nat,
 });
 export const School = IDL.Record({
   'id' : IDL.Text,
@@ -151,6 +165,11 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createAcademicQuery' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], []),
+  'createOrUpdatePackingCount' : IDL.Func(
+      [IDL.Text, PackingClass, PackingTheme, IDL.Nat, IDL.Nat, IDL.Nat],
+      [],
+      [],
+    ),
   'createOrUpdatePackingStatus' : IDL.Func(
       [
         IDL.Text,
@@ -164,7 +183,6 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
-  'createPayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Int], [IDL.Text], []),
   'createSchool' : IDL.Func(
       [
         IDL.Text,
@@ -208,8 +226,23 @@ export const idlService = IDL.Service({
       [IDL.Vec(AuditLog)],
       ['query'],
     ),
+  'getOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
+  'getOutstandingAmountsBySchoolIds' : IDL.Func(
+      [IDL.Vec(IDL.Text)],
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
+      ['query'],
+    ),
+  'getPackingCount' : IDL.Func(
+      [IDL.Text, PackingClass, PackingTheme],
+      [PackingCount],
+      ['query'],
+    ),
+  'getPackingCountsBySchool' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(PackingCount)],
+      ['query'],
+    ),
   'getPackingStatus' : IDL.Func([IDL.Text], [PackingStatus], ['query']),
-  'getPayment' : IDL.Func([IDL.Text], [Payment], ['query']),
   'getSchool' : IDL.Func([IDL.Text], [School], ['query']),
   'getStaffProfile' : IDL.Func([IDL.Principal], [StaffProfile], ['query']),
   'getTrainingVisit' : IDL.Func([IDL.Text], [TrainingVisit], ['query']),
@@ -218,6 +251,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'hasOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'listAcademicQueriesBySchool' : IDL.Func(
       [IDL.Text],
@@ -229,12 +263,12 @@ export const idlService = IDL.Service({
   'listAllPackingStatuses' : IDL.Func([], [IDL.Vec(PackingStatus)], ['query']),
   'listAllSchools' : IDL.Func([], [IDL.Vec(School)], ['query']),
   'listAllStaff' : IDL.Func([], [IDL.Vec(StaffProfile)], ['query']),
-  'listPaymentsBySchool' : IDL.Func([IDL.Text], [IDL.Vec(Payment)], ['query']),
   'listTrainingVisitsBySchool' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(TrainingVisit)],
       ['query'],
     ),
+  'repairStaffProfilePermissions' : IDL.Func([], [IDL.Nat], []),
   'respondToAcademicQuery' : IDL.Func(
       [
         IDL.Text,
@@ -245,7 +279,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'updatePayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Int, IDL.Bool], [], []),
+  'setOutstandingAmount' : IDL.Func([IDL.Text, IDL.Nat], [], []),
   'updateSchool' : IDL.Func(
       [
         IDL.Text,
@@ -267,7 +301,6 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
-  'uploadPaymentProof' : IDL.Func([IDL.Text, ExternalBlob], [], []),
 });
 
 export const idlInitArgs = [];
@@ -288,6 +321,21 @@ export const idlFactory = ({ IDL }) => {
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const PackingClass = IDL.Variant({
+    'class1' : IDL.Null,
+    'class2' : IDL.Null,
+    'class3' : IDL.Null,
+    'class4' : IDL.Null,
+    'class5' : IDL.Null,
+    'preSchool' : IDL.Null,
+  });
+  const PackingTheme = IDL.Variant({
+    'themeA' : IDL.Null,
+    'themeB' : IDL.Null,
+    'themeC' : IDL.Null,
+    'themeD' : IDL.Null,
+    'themeE' : IDL.Null,
   });
   const StaffRole = IDL.Variant({
     'admin' : IDL.Null,
@@ -330,6 +378,15 @@ export const idlFactory = ({ IDL }) => {
     'filterEntityId' : IDL.Opt(IDL.Text),
     'filterInitiator' : IDL.Opt(IDL.Principal),
   });
+  const PackingCount = IDL.Record({
+    'theme' : PackingTheme,
+    'addOnCount' : IDL.Nat,
+    'totalCount' : IDL.Nat,
+    'lastUpdateTimestamp' : IDL.Int,
+    'createdTimestamp' : IDL.Int,
+    'classType' : PackingClass,
+    'packedCount' : IDL.Nat,
+  });
   const PackingStatus = IDL.Record({
     'kitCount' : IDL.Nat,
     'addOnCount' : IDL.Nat,
@@ -340,16 +397,6 @@ export const idlFactory = ({ IDL }) => {
     'schoolId' : IDL.Text,
     'createdTimestamp' : IDL.Int,
     'packed' : IDL.Bool,
-  });
-  const Payment = IDL.Record({
-    'id' : IDL.Text,
-    'paid' : IDL.Bool,
-    'dueDate' : IDL.Int,
-    'paymentProof' : IDL.Opt(ExternalBlob),
-    'lastUpdateTimestamp' : IDL.Int,
-    'schoolId' : IDL.Text,
-    'createdTimestamp' : IDL.Int,
-    'amount' : IDL.Nat,
   });
   const School = IDL.Record({
     'id' : IDL.Text,
@@ -416,6 +463,11 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createAcademicQuery' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], []),
+    'createOrUpdatePackingCount' : IDL.Func(
+        [IDL.Text, PackingClass, PackingTheme, IDL.Nat, IDL.Nat, IDL.Nat],
+        [],
+        [],
+      ),
     'createOrUpdatePackingStatus' : IDL.Func(
         [
           IDL.Text,
@@ -429,7 +481,6 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
-    'createPayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Int], [IDL.Text], []),
     'createSchool' : IDL.Func(
         [
           IDL.Text,
@@ -473,8 +524,23 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(AuditLog)],
         ['query'],
       ),
+    'getOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
+    'getOutstandingAmountsBySchoolIds' : IDL.Func(
+        [IDL.Vec(IDL.Text)],
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
+        ['query'],
+      ),
+    'getPackingCount' : IDL.Func(
+        [IDL.Text, PackingClass, PackingTheme],
+        [PackingCount],
+        ['query'],
+      ),
+    'getPackingCountsBySchool' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(PackingCount)],
+        ['query'],
+      ),
     'getPackingStatus' : IDL.Func([IDL.Text], [PackingStatus], ['query']),
-    'getPayment' : IDL.Func([IDL.Text], [Payment], ['query']),
     'getSchool' : IDL.Func([IDL.Text], [School], ['query']),
     'getStaffProfile' : IDL.Func([IDL.Principal], [StaffProfile], ['query']),
     'getTrainingVisit' : IDL.Func([IDL.Text], [TrainingVisit], ['query']),
@@ -483,6 +549,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'hasOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'listAcademicQueriesBySchool' : IDL.Func(
         [IDL.Text],
@@ -502,16 +569,12 @@ export const idlFactory = ({ IDL }) => {
       ),
     'listAllSchools' : IDL.Func([], [IDL.Vec(School)], ['query']),
     'listAllStaff' : IDL.Func([], [IDL.Vec(StaffProfile)], ['query']),
-    'listPaymentsBySchool' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(Payment)],
-        ['query'],
-      ),
     'listTrainingVisitsBySchool' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(TrainingVisit)],
         ['query'],
       ),
+    'repairStaffProfilePermissions' : IDL.Func([], [IDL.Nat], []),
     'respondToAcademicQuery' : IDL.Func(
         [
           IDL.Text,
@@ -522,7 +585,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'updatePayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Int, IDL.Bool], [], []),
+    'setOutstandingAmount' : IDL.Func([IDL.Text, IDL.Nat], [], []),
     'updateSchool' : IDL.Func(
         [
           IDL.Text,
@@ -544,7 +607,6 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
-    'uploadPaymentProof' : IDL.Func([IDL.Text, ExternalBlob], [], []),
   });
 };
 

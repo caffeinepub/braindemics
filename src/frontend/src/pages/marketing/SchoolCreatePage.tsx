@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { useCreateSchool } from '../../hooks/useQueries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from '@tanstack/react-router';
+import { useCreateSchool, useGetCallerUserProfile } from '../../hooks/useQueries';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { StaffRole } from '../../backend';
 
 export default function SchoolCreatePage() {
   const navigate = useNavigate();
-  const createSchool = useCreateSchool();
+  const { data: profile } = useGetCallerUserProfile();
+  const createMutation = useCreateSchool();
+
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -27,13 +30,8 @@ export default function SchoolCreatePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.id || !formData.name || !formData.city || !formData.state) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
     try {
-      await createSchool.mutateAsync({
+      await createMutation.mutateAsync({
         id: formData.id,
         name: formData.name,
         address: formData.address,
@@ -45,16 +43,21 @@ export default function SchoolCreatePage() {
         website: formData.website || null,
         studentCount: BigInt(formData.studentCount || 0),
       });
-
       toast.success('School registered successfully');
-      navigate({ to: '/marketing/dashboard' });
+      
+      // Navigate based on role
+      if (profile?.role === StaffRole.admin) {
+        navigate({ to: '/admin/dashboard' });
+      } else {
+        navigate({ to: '/marketing/dashboard' });
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to register school');
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Register New School</h1>
         <p className="text-muted-foreground mt-1">Add a new school to the system</p>
@@ -63,139 +66,123 @@ export default function SchoolCreatePage() {
       <Card>
         <CardHeader>
           <CardTitle>School Information</CardTitle>
+          <CardDescription>Enter the details of the new school</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="id">
-                  School ID <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="id">School ID *</Label>
                 <Input
                   id="id"
                   value={formData.id}
                   onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                  placeholder="e.g., SCH001"
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="name">
-                  School Name <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="name">School Name *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter school name"
                   required
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Enter full address"
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                />
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="city">
-                  City <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="city">City *</Label>
                 <Input
                   id="city"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="Enter city"
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="state">
-                  State <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="state">State *</Label>
                 <Input
                   id="state"
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  placeholder="Enter state"
                   required
                 />
               </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="contactPerson">Contact Person</Label>
+                <Label htmlFor="contactPerson">Contact Person *</Label>
                 <Input
                   id="contactPerson"
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                  placeholder="Enter contact person name"
+                  required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number</Label>
+                <Label htmlFor="contactNumber">Contact Number *</Label>
                 <Input
                   id="contactNumber"
                   value={formData.contactNumber}
                   onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                  placeholder="Enter contact number"
+                  required
                 />
               </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter email address"
+                  required
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
                 <Input
                   id="website"
+                  type="url"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  placeholder="Enter website URL"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentCount">Student Count *</Label>
+                <Input
+                  id="studentCount"
+                  type="number"
+                  value={formData.studentCount}
+                  onChange={(e) => setFormData({ ...formData, studentCount: e.target.value })}
+                  required
+                  min="0"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="studentCount">Student Count</Label>
-              <Input
-                id="studentCount"
-                type="number"
-                min="0"
-                value={formData.studentCount}
-                onChange={(e) => setFormData({ ...formData, studentCount: e.target.value })}
-                placeholder="Enter number of students"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={createSchool.isPending}>
-                {createSchool.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Register School
-              </Button>
-              <Button type="button" variant="outline" onClick={() => navigate({ to: '/marketing/dashboard' })}>
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (profile?.role === StaffRole.admin) {
+                    navigate({ to: '/admin/dashboard' });
+                  } else {
+                    navigate({ to: '/marketing/dashboard' });
+                  }
+                }}
+              >
                 Cancel
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Register School
               </Button>
             </div>
           </form>

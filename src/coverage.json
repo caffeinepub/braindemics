@@ -1,347 +1,150 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T07:26:19.833Z",
+  "generatedAt": "2026-02-10T10:17:59.499Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 13,
-    "implemented": 12,
+    "total": 7,
+    "implemented": 7,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Implement secure authentication using Internet Identity and a common login page that signs the user in and then redirects them to the correct role dashboard based on their staff role.",
+        "id": "REQ-29",
+        "summary": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/LoginPage.tsx",
-          "frontend/src/hooks/useAuthSession.ts",
-          "frontend/src/components/AuthGate.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/LoginPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-10",
-        "summary": "Implement Academic module to view academic queries raised by trainers, respond to them, and update query status; ensure query lifecycle and responses are fully auditable.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/academic/AcademicQueriesPage.tsx",
-          "frontend/src/components/queries/AcademicQueryResponseForm.tsx",
-          "frontend/src/pages/training/TrainingQueriesPage.tsx",
-          "frontend/src/hooks/useAcademicQueries.ts",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/academic/AcademicQueriesPage.tsx",
-          "frontend/src/pages/training/TrainingQueriesPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-11",
-        "summary": "Add global tables with filtering and search for key lists (schools, payments, packing statuses, training visits, academic queries) and ensure all data entry is form-based with validation and clear English error handling.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/tables/DataTable.tsx",
-          "frontend/src/components/tables/TableFilters.tsx",
-          "frontend/src/lib/validation.ts",
-          "frontend/src/components/common/QueryStates.tsx",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/accounts/SchoolPaymentsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/accounts/SchoolPaymentsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-12",
-        "summary": "Implement a comprehensive audit logging system for all create/update actions across modules (schools, staff, payments, packing, visits, queries) and provide an Admin-facing activity/audit log viewer with filtering by actor, entity type, school ID, and date range.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/AuditLogPage.tsx",
-          "frontend/src/hooks/useAuditLogs.ts",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/AuditLogPage.tsx",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-13",
-        "summary": "Deliver a clean, simple, functional, responsive (desktop-first) UI with a coherent visual theme applied consistently across dashboards, forms, and tables.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/components/layout/RoleNav.tsx",
-          "frontend/tailwind.config.js",
-          "frontend/src/index.css",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/components/layout/RoleNav.tsx",
-          "frontend/tailwind.config.js",
-          "frontend/src/index.css",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Create the core backend data models and persistence for: School, Staff, Payment, Packing Status, Training Visit, Academic Query, and Audit Log entries; ensure all department operations reference a single shared School ID and records are time-stamped.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Enforce strict role-based access control (RBAC) in the backend for every mutation and sensitive read according to the six roles; the frontend must also guard routes and disable/hide unauthorized actions, but backend enforcement is the source of truth.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/RequireRole.tsx",
-          "frontend/src/lib/permissions.ts",
-          "frontend/src/lib/errors.ts",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Implement Staff management and role assignment so that Admin can create/update staff records and associate an Internet Identity principal with a staff profile (name, role, department, contact details); use this mapping to resolve roles after login.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/StaffManagementPage.tsx",
-          "frontend/src/hooks/useStaff.ts",
-          "frontend/src/components/forms/StaffProfileForm.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/StaffManagementPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Build role-specific dashboards (Admin, Accounts, Packing, Marketing, Training, Academic) with summary cards, relevant tables, and notifications derived from the shared school data and each department’s workflow state.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-          "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
-          "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
-          "frontend/src/hooks/useDashboards.ts",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-          "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
-          "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
-          "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Implement Marketing module pages to register new schools and edit school details, including student count updates; ensure created schools become visible to other roles immediately via the shared School ID.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "frontend/src/pages/packing/PackingSchoolsPage.tsx",
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
           "frontend/src/components/schools/SchoolSearchPanel.tsx",
-          "frontend/src/hooks/useSchools.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/routeTree.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-          "frontend/src/components/schools/SchoolSearchPanel.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/packing/PackingSchoolsPage.tsx",
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
+          "frontend/src/routeTree.tsx"
         ]
       },
       {
-        "id": "REQ-7",
-        "summary": "Implement Accounts module to view school details and manage payments: update outstanding payments, payment status, due dates/amounts as needed, and upload/download payment proof PDFs; prevent Accounts from editing school core details.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-          "frontend/src/components/payments/PaymentForm.tsx",
-          "frontend/src/components/pdfs/PdfUploadField.tsx",
-          "frontend/src/components/payments/PaymentProofViewer.tsx",
-          "frontend/src/hooks/usePayments.ts",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Implement Packing module to view school details and update packing status: student kit count, add-on count, packing/dispatch status and dispatch details, and current curriculum theme; ensure updates are visible to other departments.",
+        "id": "REQ-30",
+        "summary": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/components/packing/PackingStatusForm.tsx",
-          "frontend/src/hooks/usePacking.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/packing/packingOptions.ts",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
           "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/packing/packingOptions.ts",
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
-        "id": "REQ-9",
-        "summary": "Implement Training module to log training visits and raise academic queries: record visit date, reason, visiting person, contact person mobile number, observations, upload/download classroom observation PDFs, and create academic queries linked to the school.",
+        "id": "REQ-31",
+        "summary": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/training/SchoolTrainingPage.tsx",
-          "frontend/src/components/training/TrainingVisitForm.tsx",
-          "frontend/src/components/training/ClassroomObservationViewer.tsx",
-          "frontend/src/components/queries/AcademicQueryCreateForm.tsx",
-          "frontend/src/hooks/useTraining.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/training/SchoolTrainingPage.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-32",
+        "summary": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/schools/SchoolSearchPanel.tsx",
+          "frontend/src/routeTree.tsx",
+          "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/routeTree.tsx",
+          "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-33",
+        "summary": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-34",
+        "summary": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/demo/demoDataStore.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
+          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
+          "frontend/src/components/schools/SchoolSearchPanel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/demo/demoDataStore.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "frontend/src/pages/packing/SchoolPackingPage.tsx",
+          "frontend/src/pages/admin/OutstandingAmountPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-35",
+        "summary": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/routeTree.tsx",
+          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/routeTree.tsx",
+          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/authorization/MixinAuthorization.mo",
-    "backend/authorization/access-control.mo",
-    "backend/blob-storage/Mixin.mo",
-    "backend/blob-storage/Storage.mo",
     "backend/main.mo",
     "build-request.json",
-    "build-template/Dockerfile",
-    "build-template/LICENSE",
-    "build-template/README.md",
-    "build-template/deploy.sh",
-    "build-template/icp.yaml",
-    "build-template/package.json",
-    "build-template/pnpm-lock.yaml",
-    "build-template/pnpm-workspace.yaml",
-    "build-template/scripts/prune-unused-images.js",
-    "build-template/scripts/resize-images.js",
-    "build-template/src/backend/canister.yaml",
-    "build-template/src/backend/system-idl/aaaaa-aa.did",
-    "build-template/src/frontend/canister.yaml",
-    "build-template/src/frontend/components.json",
-    "build-template/src/frontend/env.json",
-    "build-template/src/frontend/eslint-rules/no-bigint-in-query-keys.js",
-    "build-template/src/frontend/eslint-rules/require-internet-identity-provider.js",
-    "build-template/src/frontend/eslint.config.js",
-    "build-template/src/frontend/package.json",
-    "build-template/src/frontend/postcss.config.js",
-    "build-template/src/frontend/src/components/ui/accordion.tsx",
-    "build-template/src/frontend/src/components/ui/alert-dialog.tsx",
-    "build-template/src/frontend/src/components/ui/alert.tsx",
-    "build-template/src/frontend/src/components/ui/aspect-ratio.tsx",
-    "build-template/src/frontend/src/components/ui/avatar.tsx",
-    "build-template/src/frontend/src/components/ui/badge.tsx",
-    "build-template/src/frontend/src/components/ui/breadcrumb.tsx",
-    "build-template/src/frontend/src/components/ui/button.tsx",
-    "build-template/src/frontend/src/components/ui/calendar.tsx",
-    "build-template/src/frontend/src/components/ui/card.tsx",
-    "build-template/src/frontend/src/components/ui/carousel.tsx",
-    "build-template/src/frontend/src/components/ui/chart.tsx",
-    "build-template/src/frontend/src/components/ui/checkbox.tsx",
-    "build-template/src/frontend/src/components/ui/collapsible.tsx",
-    "build-template/src/frontend/src/components/ui/command.tsx",
-    "build-template/src/frontend/src/components/ui/context-menu.tsx",
-    "build-template/src/frontend/src/components/ui/dialog.tsx",
-    "build-template/src/frontend/src/components/ui/drawer.tsx",
-    "build-template/src/frontend/src/components/ui/dropdown-menu.tsx",
-    "build-template/src/frontend/src/components/ui/form.tsx",
-    "build-template/src/frontend/src/components/ui/hover-card.tsx",
-    "build-template/src/frontend/src/components/ui/input-otp.tsx",
-    "build-template/src/frontend/src/components/ui/input.tsx",
-    "build-template/src/frontend/src/components/ui/label.tsx",
-    "build-template/src/frontend/src/components/ui/menubar.tsx",
-    "build-template/src/frontend/src/components/ui/navigation-menu.tsx",
-    "build-template/src/frontend/src/components/ui/pagination.tsx",
-    "build-template/src/frontend/src/components/ui/popover.tsx",
-    "build-template/src/frontend/src/components/ui/progress.tsx",
-    "build-template/src/frontend/src/components/ui/radio-group.tsx",
-    "build-template/src/frontend/src/components/ui/resizable.tsx",
-    "build-template/src/frontend/src/components/ui/scroll-area.tsx",
-    "build-template/src/frontend/src/components/ui/select.tsx",
-    "build-template/src/frontend/src/components/ui/separator.tsx",
-    "build-template/src/frontend/src/components/ui/sheet.tsx",
-    "build-template/src/frontend/src/components/ui/sidebar.tsx",
-    "build-template/src/frontend/src/components/ui/skeleton.tsx",
-    "build-template/src/frontend/src/components/ui/slider.tsx",
-    "build-template/src/frontend/src/components/ui/sonner.tsx",
-    "build-template/src/frontend/src/components/ui/switch.tsx",
-    "build-template/src/frontend/src/components/ui/table.tsx",
-    "build-template/src/frontend/src/components/ui/tabs.tsx",
-    "build-template/src/frontend/src/components/ui/textarea.tsx",
-    "build-template/src/frontend/src/components/ui/toggle-group.tsx",
-    "build-template/src/frontend/src/components/ui/toggle.tsx",
-    "build-template/src/frontend/src/components/ui/tooltip.tsx",
-    "build-template/src/frontend/src/hooks/use-mobile.tsx",
-    "build-template/src/frontend/src/lib/utils.ts",
-    "build-template/src/frontend/tsconfig.json",
-    "build-template/src/frontend/vite.config.js",
-    "build-template/tsconfig.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.css",
-    "frontend/index.html",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/layout/RoleNav.tsx",
-    "frontend/src/components/schools/SchoolSearchPanel.tsx",
-    "frontend/src/config.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/demo/demoDataStore.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/main.tsx",
-    "frontend/src/pages/LoginPage.tsx",
-    "frontend/src/pages/academic/AcademicQueriesPage.tsx",
     "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-    "frontend/src/pages/admin/AuditLogPage.tsx",
+    "frontend/src/pages/admin/OutstandingAmountPage.tsx",
     "frontend/src/pages/admin/StaffManagementPage.tsx",
-    "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
-    "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
     "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-    "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
     "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
-    "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
     "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+    "frontend/src/pages/packing/PackingSchoolsPage.tsx",
     "frontend/src/pages/packing/SchoolPackingPage.tsx",
+    "frontend/src/pages/packing/packingOptions.ts",
     "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-    "frontend/src/pages/training/SchoolTrainingPage.tsx",
-    "frontend/src/pages/training/TrainingQueriesPage.tsx",
     "frontend/src/routeTree.tsx",
-    "frontend/src/ui-summary.json",
-    "frontend/src/utils/StorageClient.ts",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

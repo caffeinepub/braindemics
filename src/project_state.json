@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Role-based internal web application for Braindemics to manage shared School records across departments (Marketing, Accounts, Packing, Training, Academic, Admin) with strict RBAC, dashboards, form-based workflows, PDF uploads, search/filtering, and full audit logging.",
+  "projectStateVersion": 13,
+  "summary": "Role-based internal web application for Braindemics to manage shared School records across departments with strict RBAC, dashboards, form-based workflows, PDF uploads, search/filtering, and full audit logging; additionally, support a test/preview mode with dummy login to access screens without Internet Identity.",
   "architectural_notes": [
     "Single shared School ID is the primary key linking all department modules (payments, packing, training visits, academic queries).",
     "Strict RBAC: Marketing-only create/edit school core details; other roles read-only for core school info; Admin has full access.",
@@ -9,10 +9,17 @@
     "All mutating actions must be audit-logged with timestamp and user identity.",
     "PDF uploads only for specified entities (payment proof, classroom observations).",
     "Desktop-first responsive UI; clean functional design prioritized.",
-    "Tables should support filtering and search; forms must validate and show clear errors."
+    "Tables should support filtering and search; forms must validate and show clear errors.",
+    "Introduce a configurable test/preview mode (feature flag) that can bypass Internet Identity and use dummy credentials/roles for QA/demo access while keeping production auth unchanged.",
+    "Packing module must support controlled vocabularies for Class (Beginner/Explorer/Master) and Theme (MYSELF, SHAPES, ANIMAL KINGDOM, PLANT TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS) stored per School and editable via Packing UI.",
+    "School details should be displayed read-only on Admin/Packing when a School is selected, while allowing module-specific fields (e.g., outstanding, packing status/counts) to be edited."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Login blocked with message \"Access not configured. Please contact your administrator to set up your staff profile.\" persists even after attempted setup; indicates staff profile ↔ Internet Identity principal mapping not being created/loaded correctly.",
+    "Demo/Preview Mode login: entering dummy user ID/password does not route into the app/dashboard; user cannot access pages to explore the app.",
+    "Demo/Preview Mode: key module flows are not fully working end-to-end (school registration/reflection across pages, outstanding updates, packing edits), preventing full-page testing in demo mode."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-implement-secure-authentication-using-internet-identity-and-a-common-login-page-that-signs-the-user-in-and-then-redirects-them-to-the-correct-role-dashboard-based-on-their-staff-role",
@@ -109,6 +116,158 @@
         "REQ-13"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-improve-the-login-page-diagnostics-so-that-when-a-signed-in-user-has-no-staff-profile-the-ui-also-shows-the-user-s-current-internet-identity-principal-as-text-with-a-clear-copy-action-to-reduce-principal-mismatch-errors-during-staff-setup",
+      "title": "Improve the login page diagnostics so that when a signed-in user has no staff profile, the UI also shows the user’s current Internet Identity Principal (as text) with a clear “Copy” action, to reduce principal mismatch errors during staff setup.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-differentiate-between-no-staff-profile-exists-vs-request-failed-due-to-authorization-backend-error-during-profile-fetch-and-show-an-explicit-english-error-message-for-the-latter-instead-of-showing-the-access-not-configured-message",
+      "title": "Differentiate between “no staff profile exists” vs “request failed due to authorization/backend error” during profile fetch, and show an explicit English error message for the latter (instead of showing the “Access not configured” message).",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-expose-the-new-admin-repair-operation-in-the-admin-staff-management-page-as-a-clearly-labeled-action-e-g-repair-staff-access-including-confirmation-and-success-error-feedback-so-administrators-can-fix-login-access-issues-without-redeploying-or-manual-intervention",
+      "title": "Expose the new Admin repair operation in the Admin Staff Management page as a clearly labeled action (e.g., “Repair staff access”), including confirmation and success/error feedback, so administrators can fix login access issues without redeploying or manual intervention.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-frontend-only-demo-preview-mode-login-path-on-the-existing-login-screen-that-allows-signing-in-with-dummy-username-password-no-internet-identity-and-routes-the-user-into-the-admin-dashboard-for-testing-on-a-laptop-preview-build",
+      "title": "Add a frontend-only “Demo / Preview Mode” login path on the existing login screen that allows signing in with dummy username/password (no Internet Identity) and routes the user into the Admin dashboard for testing on a laptop preview build.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-persistent-client-side-session-flag-for-demo-preview-mode-e-g-stored-in-sessionstorage-localstorage-and-use-it-to-provide-a-synthetic-userprofile-admin-by-default-to-the-app-so-route-guards-and-layouts-treat-the-user-as-authenticated-during-demo-testing",
+      "title": "Implement a persistent client-side session flag for Demo/Preview Mode (e.g., stored in sessionStorage/localStorage) and use it to provide a synthetic UserProfile (Admin by default) to the app so route guards and layouts treat the user as authenticated during demo testing.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-demo-preview-banner-and-role-switcher-while-in-demo-preview-mode-to-help-testers-see-all-screens-by-switching-between-admin-marketing-accounts-packing-training-academic-views-without-re-authentication",
+      "title": "Add an in-app Demo/Preview banner and role switcher while in Demo/Preview Mode to help testers “see all screens” by switching between Admin/Marketing/Accounts/Packing/Training/Academic views without re-authentication.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-demo-preview-mode-ensure-screens-that-normally-load-backend-data-remain-navigable-and-do-not-hard-crash-if-backend-calls-fail-show-a-clear-english-demo-mode-data-is-not-available-empty-state-where-needed",
+      "title": "In Demo/Preview Mode, ensure screens that normally load backend data remain navigable and do not hard-crash if backend calls fail; show a clear, English “Demo mode: data is not available” empty state where needed.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-explicit-exit-demo-preview-mode-action-in-the-authenticated-layout-that-clears-the-demo-session-and-returns-the-user-to-the-normal-login-screen",
+      "title": "Add an explicit “Exit Demo/Preview Mode” action in the authenticated layout that clears the demo session and returns the user to the normal login screen.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-demo-preview-mode-sign-in-flow-so-that-entering-the-demo-username-password-successfully-routes-the-user-into-the-authenticated-app-starting-at-the-admin-dashboard-without-being-redirected-back-to-login-by-route-guards",
+      "title": "Fix the Demo/Preview Mode sign-in flow so that entering the demo username/password successfully routes the user into the authenticated app (starting at the Admin dashboard) without being redirected back to /login by route guards.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-tanstack-router-route-protection-explicitly-supports-demo-preview-mode-by-allowing-the-authenticated-route-guard-s-to-treat-a-demo-session-as-authenticated-and-to-source-the-profile-from-the-demo-profile-factory-not-from-backend-actor-calls",
+      "title": "Ensure TanStack Router route protection explicitly supports Demo/Preview Mode by allowing the authenticated route guard(s) to treat a demo session as authenticated and to source the profile from the demo profile factory (not from backend actor calls).",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-login-screen-ux-so-demo-login-failures-and-internet-identity-login-profile-issues-cannot-conflict-or-confuse-the-user-show-only-the-relevant-error-for-the-login-method-being-attempted-using-clear-english",
+      "title": "Improve the login screen UX so demo login failures and Internet Identity login/profile issues cannot conflict or confuse the user; show only the relevant error for the login method being attempted, using clear English.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-change-requests-section-that-lets-authenticated-users-record-the-specific-changes-and-add-ons-they-want-on-particular-pages-since-the-current-request-does-not-specify-which-pages-or-what-changes-are-needed",
+      "title": "Add an in-app \"Change Requests\" section that lets authenticated users record the specific \"changes and add ons\" they want on particular pages, since the current request does not specify which pages or what changes are needed.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-packing-module-ui-to-support-searching-and-selecting-a-school-instead-of-relying-only-on-a-pre-selected-route-param-then-show-the-selected-school-s-details-as-read-only-and-allow-updating-packing-status-for-that-selected-school",
+      "title": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-packing-status-editing-to-include-two-dropdowns-for-class-and-theme-with-the-exact-option-sets-requested-and-ensure-the-selected-values-are-saved-and-reloaded-for-each-school",
+      "title": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-counts-section-on-the-packing-page-for-the-selected-school-that-allows-entering-and-saving-counts-associated-with-the-selected-class-and-theme-and-ensure-these-values-are-persisted-and-reloaded",
+      "title": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-workflow-to-search-and-select-a-school-and-set-update-an-outstanding-amount-for-the-selected-school-selected-school-details-must-be-displayed-read-only-alongside-the-outstanding-field",
+      "title": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-expose-the-school-s-outstanding-amount-in-the-marketing-module-when-viewing-selecting-any-school-so-marketing-can-see-the-outstanding-value-set-by-admin-and-or-accounts",
+      "title": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-core-flows-work-end-to-end-in-demo-preview-mode-without-backend-access-school-registration-school-reflection-across-pages-outstanding-updates-and-packing-edits-must-all-function-using-demo-local-persisted-data",
+      "title": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-allow-admin-to-register-schools-create-school-in-non-demo-mode-and-ensure-newly-created-schools-appear-immediately-across-modules-wherever-school-search-listing-is-used",
+      "title": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -178,6 +337,60 @@
       "reqIds": [
         "REQ-2"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Ensure a user with a valid StaffProfile can always retrieve their profile via getCallerUserProfile after signing in with Internet Identity, without requiring any additional manual access-control setup beyond staff profile creation.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "When an Admin creates a staff profile using createStaffProfile, automatically grant the created staff principal the minimum required permission(s) needed to call profile endpoints (e.g., getCallerUserProfile/saveCallerUserProfile), so newly created staff can log in immediately.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add an Admin-only backend repair operation that can backfill missing minimum profile-access permissions for already-existing staff profiles (created before this fix), so existing staff can log in without recreating profiles.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Add a test/preview login mode with dummy username/password (or simple Admin sign-in) that bypasses Internet Identity so testers can access the app and view all screens on a laptop preview build.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Packing page: add School search/select; show selected school details read-only; allow status update with two dropdowns (Class: Beginner/Explorer/Master; Theme: MYSELF, SHAPES, ANIMAL KINGDOM, PLANT TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS) plus counts entry for selected class/theme",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Admin page: add School search/select; show selected school details read-only; allow setting/updating outstanding amount for that school",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Marketing page: when selecting/viewing a school, display that school’s outstanding amount (as set by Admin/Accounts)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Demo/Preview Mode: ensure all major pages/sections are usable end-to-end (register school, reflect across modules, update outstanding, packing edits) without broken flows",
+      "reqIds": [],
       "status": "pending"
     }
   ],

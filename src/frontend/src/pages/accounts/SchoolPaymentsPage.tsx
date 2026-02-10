@@ -1,326 +1,353 @@
+import { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
-import { useGetSchool, useListPaymentsBySchool, useCreatePayment, useUpdatePayment, useUploadPaymentProof } from '../../hooks/useQueries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  useGetSchool,
+  useListPaymentsBySchool,
+  useCreatePayment,
+  useUpdatePayment,
+  useUploadPaymentProof,
+  Payment,
+} from '../../hooks/useQueries';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Plus, Edit, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { Loader2, Plus, Upload, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ExternalBlob } from '../../backend';
+import DemoDataUnavailableState from '../../components/demo/DemoDataUnavailableState';
+import { shouldDisableMutations, demoDisabledReason } from '../../demo/demoGuards';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function SchoolPaymentsPage() {
   const { schoolId } = useParams({ from: '/authenticated/accounts/schools/$schoolId/payments' });
-  const { data: school, isLoading: schoolLoading } = useGetSchool(schoolId);
-  const { data: payments, isLoading: paymentsLoading } = useListPaymentsBySchool(schoolId);
-  const createPayment = useCreatePayment();
-  const updatePayment = useUpdatePayment();
-  const uploadProof = useUploadPaymentProof();
+  const { data: school, isLoading: schoolLoading, isError: schoolError } = useGetSchool(schoolId);
+  const { data: payments, isLoading: paymentsLoading, isError: paymentsError } = useListPaymentsBySchool(schoolId);
+  const createMutation = useCreatePayment();
+  const updateMutation = useUpdatePayment();
+  const uploadProofMutation = useUploadPaymentProof();
 
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<any>(null);
-  const [uploadingProof, setUploadingProof] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
 
-  const [newPayment, setNewPayment] = useState({
-    amount: '',
-    dueDate: '',
-  });
-
-  const [editPaymentData, setEditPaymentData] = useState({
+  const [formData, setFormData] = useState({
     amount: '',
     dueDate: '',
     paid: false,
   });
 
-  const handleCreatePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const isDemo = shouldDisableMutations();
 
-    try {
-      await createPayment.mutateAsync({
-        schoolId,
-        amount: BigInt(newPayment.amount),
-        dueDate: BigInt(new Date(newPayment.dueDate).getTime() * 1000000),
-      });
-
-      toast.success('Payment created successfully');
-      setCreateDialogOpen(false);
-      setNewPayment({ amount: '', dueDate: '' });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create payment');
-    }
+  const handleOpenCreate = () => {
+    setEditingPayment(null);
+    setFormData({ amount: '', dueDate: '', paid: false });
+    setDialogOpen(true);
   };
 
-  const handleUpdatePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedPayment) return;
-
-    try {
-      await updatePayment.mutateAsync({
-        id: selectedPayment.id,
-        amount: BigInt(editPaymentData.amount),
-        dueDate: BigInt(new Date(editPaymentData.dueDate).getTime() * 1000000),
-        paid: editPaymentData.paid,
-        schoolId,
-      });
-
-      toast.success('Payment updated successfully');
-      setEditDialogOpen(false);
-      setSelectedPayment(null);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update payment');
-    }
-  };
-
-  const handleFileUpload = async (paymentId: string, file: File) => {
-    if (file.type !== 'application/pdf') {
-      toast.error('Only PDF files are allowed');
-      return;
-    }
-
-    setUploadingProof(paymentId);
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array);
-
-      await uploadProof.mutateAsync({
-        paymentId,
-        proof: blob,
-        schoolId,
-      });
-
-      toast.success('Payment proof uploaded successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload proof');
-    } finally {
-      setUploadingProof(null);
-    }
-  };
-
-  const openEditDialog = (payment: any) => {
-    setSelectedPayment(payment);
-    setEditPaymentData({
+  const handleOpenEdit = (payment: Payment) => {
+    setEditingPayment(payment);
+    setFormData({
       amount: payment.amount.toString(),
       dueDate: format(Number(payment.dueDate) / 1000000, 'yyyy-MM-dd'),
       paid: payment.paid,
     });
-    setEditDialogOpen(true);
+    setDialogOpen(true);
   };
 
-  if (schoolLoading) {
+  const handleSubmit = async () => {
+    if (isDemo) {
+      toast.error(demoDisabledReason());
+      return;
+    }
+
+    try {
+      const dueDateMs = new Date(formData.dueDate).getTime();
+      if (editingPayment) {
+        await updateMutation.mutateAsync({
+          id: editingPayment.id,
+          amount: BigInt(formData.amount),
+          dueDate: BigInt(dueDateMs * 1000000),
+          paid: formData.paid,
+          schoolId,
+        });
+        toast.success('Payment updated successfully');
+      } else {
+        await createMutation.mutateAsync({
+          schoolId,
+          amount: BigInt(formData.amount),
+          dueDate: BigInt(dueDateMs * 1000000),
+        });
+        toast.success('Payment created successfully');
+      }
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save payment');
+    }
+  };
+
+  const handleFileUpload = async (paymentId: string, file: File) => {
+    if (isDemo) {
+      toast.error(demoDisabledReason());
+      return;
+    }
+
+    try {
+      setUploadingFor(paymentId);
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const blob = ExternalBlob.fromBytes(uint8Array);
+
+      await uploadProofMutation.mutateAsync({
+        paymentId,
+        proof: blob,
+        schoolId,
+      });
+      toast.success('Payment proof uploaded successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload proof');
+    } finally {
+      setUploadingFor(null);
+    }
+  };
+
+  if (schoolLoading || paymentsLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (schoolError && isDemo) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
+        <div>
+          <h1 className="text-3xl font-bold">School Payments</h1>
+          <p className="text-muted-foreground mt-1">Manage payments for school</p>
+        </div>
+        <DemoDataUnavailableState message="School data is not available in Demo/Preview Mode." />
       </div>
     );
   }
 
   if (!school) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">School not found</p>
-      </div>
-    );
+    return <div>School not found</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{school.name}</h1>
-        <p className="text-muted-foreground mt-1">Manage payments for School ID: {school.id}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Payments - {school.name}</h1>
+          <p className="text-muted-foreground mt-1">Manage payment records and proofs</p>
+        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button onClick={handleOpenCreate} disabled={isDemo}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Payment
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {isDemo && (
+              <TooltipContent>
+                <p>{demoDisabledReason()}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Payments</CardTitle>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Payment
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Payment</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreatePayment} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    min="0"
-                    value={newPayment.amount}
-                    onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newPayment.dueDate}
-                    onChange={(e) => setNewPayment({ ...newPayment, dueDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={createPayment.isPending}>
-                  {createPayment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Payment
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+        <CardHeader>
+          <CardTitle>Payment Records</CardTitle>
+          <CardDescription>View and manage all payments for this school</CardDescription>
         </CardHeader>
         <CardContent>
-          {paymentsLoading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : payments && payments.length > 0 ? (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Payment ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Proof</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-mono text-sm">{payment.id}</TableCell>
-                      <TableCell>₹{Number(payment.amount).toLocaleString()}</TableCell>
-                      <TableCell>{format(Number(payment.dueDate) / 1000000, 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            payment.paid
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                          }`}
+          {paymentsError && isDemo ? (
+            <DemoDataUnavailableState message="Payment data is not available in Demo/Preview Mode." />
+          ) : !payments || payments.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No payments found</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payment ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Proof</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-mono text-sm">{payment.id}</TableCell>
+                    <TableCell className="font-medium">₹{payment.amount.toString()}</TableCell>
+                    <TableCell>{format(Number(payment.dueDate) / 1000000, 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>
+                      <Badge variant={payment.paid ? 'default' : 'secondary'}>
+                        {payment.paid ? 'Paid' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {payment.paymentProof ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(payment.paymentProof!.getDirectURL(), '_blank')}
                         >
-                          {payment.paid ? 'Paid' : 'Pending'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {payment.paymentProof ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const url = payment.paymentProof!.getDirectURL();
-                              window.open(url, '_blank');
-                            }}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <label className="cursor-pointer">
-                            <input
-                              type="file"
-                              accept="application/pdf"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleFileUpload(payment.id, file);
-                              }}
-                              disabled={uploadingProof === payment.id}
-                            />
-                            <Button variant="ghost" size="sm" disabled={uploadingProof === payment.id} asChild>
-                              <span>
-                                {uploadingProof === payment.id ? (
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No proof</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEdit(payment)}
+                                disabled={isDemo}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          {isDemo && (
+                            <TooltipContent>
+                              <p>{demoDisabledReason()}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={uploadingFor === payment.id || isDemo}
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'application/pdf,image/*';
+                                  input.onchange = (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) handleFileUpload(payment.id, file);
+                                  };
+                                  input.click();
+                                }}
+                              >
+                                {uploadingFor === payment.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Upload className="h-4 w-4" />
                                 )}
-                              </span>
-                            </Button>
-                          </label>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(payment)}>
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">No payments recorded yet</p>
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          {isDemo && (
+                            <TooltipContent>
+                              <p>{demoDisabledReason()}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Payment</DialogTitle>
+            <DialogTitle>{editingPayment ? 'Edit Payment' : 'Create Payment'}</DialogTitle>
+            <DialogDescription>
+              {editingPayment ? 'Update payment information' : 'Add a new payment record'}
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdatePayment} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="editAmount">Amount</Label>
+              <Label htmlFor="amount">Amount (₹)</Label>
               <Input
-                id="editAmount"
+                id="amount"
                 type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 min="0"
-                value={editPaymentData.amount}
-                onChange={(e) => setEditPaymentData({ ...editPaymentData, amount: e.target.value })}
-                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editDueDate">Due Date</Label>
+              <Label htmlFor="dueDate">Due Date</Label>
               <Input
-                id="editDueDate"
+                id="dueDate"
                 type="date"
-                value={editPaymentData.dueDate}
-                onChange={(e) => setEditPaymentData({ ...editPaymentData, dueDate: e.target.value })}
-                required
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="paid"
-                checked={editPaymentData.paid}
-                onCheckedChange={(checked) => setEditPaymentData({ ...editPaymentData, paid: checked as boolean })}
-              />
-              <Label htmlFor="paid" className="cursor-pointer">
-                Mark as Paid
-              </Label>
-            </div>
-            <Button type="submit" disabled={updatePayment.isPending}>
-              {updatePayment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Payment
+            {editingPayment && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="paid"
+                  checked={formData.paid}
+                  onCheckedChange={(checked) => setFormData({ ...formData, paid: checked as boolean })}
+                />
+                <Label htmlFor="paid" className="cursor-pointer">
+                  Mark as paid
+                </Label>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
             </Button>
-          </form>
+            <Button
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {editingPayment ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

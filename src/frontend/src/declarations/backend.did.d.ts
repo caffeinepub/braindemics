@@ -21,6 +21,18 @@ export interface AcademicQuery {
   'createdTimestamp' : bigint,
   'raisedBy' : Principal,
 }
+export interface AcademicQueryExtended {
+  'id' : string,
+  'status' : { 'resolved' : null } |
+    { 'open' : null },
+  'lastUpdateTimestamp' : bigint,
+  'schoolId' : string,
+  'queries' : string,
+  'response' : [] | [string],
+  'lastUpdatedByName' : string,
+  'createdTimestamp' : bigint,
+  'raisedBy' : Principal,
+}
 export interface AuditLog {
   'id' : string,
   'action' : string,
@@ -29,6 +41,18 @@ export interface AuditLog {
   'timestamp' : bigint,
   'details' : string,
   'entityType' : string,
+}
+export interface ConsolidatedSchoolModuleData {
+  'school' : School,
+  'packingCounts' : Array<PackingCount>,
+  'sectionMetadata' : Array<SectionMetadata>,
+  'academicQueries' : Array<AcademicQuery>,
+  'trainingVisits' : Array<TrainingVisit>,
+  'outstandingAmount' : bigint,
+  'packingStatus' : [] | [PackingStatus],
+  'lastActionByModule' : Array<
+    [string, [] | [Principal], string, [] | [bigint]]
+  >,
 }
 export type ExternalBlob = Uint8Array;
 export interface FilterCriteria {
@@ -81,6 +105,12 @@ export interface School {
   'createdTimestamp' : bigint,
   'contactNumber' : string,
   'studentCount' : bigint,
+}
+export interface SectionMetadata {
+  'section' : string,
+  'lastUpdatedBy' : [] | [Principal],
+  'lastUpdatedTimestamp' : [] | [bigint],
+  'lastUpdatedByName' : string,
 }
 export interface StaffProfile {
   'principal' : Principal,
@@ -179,10 +209,18 @@ export interface _SERVICE {
     [string, bigint, string, string, string, string, [] | [ExternalBlob]],
     string
   >,
+  'getAcademicQueriesBySchoolWithMetadata' : ActorMethod<
+    [string],
+    Array<AcademicQueryExtended>
+  >,
   'getAcademicQuery' : ActorMethod<[string], AcademicQuery>,
   'getAuditLog' : ActorMethod<[string], AuditLog>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getConsolidatedSchoolDetails' : ActorMethod<
+    [string],
+    [] | [ConsolidatedSchoolModuleData]
+  >,
   'getFilteredAuditLogs' : ActorMethod<[FilterCriteria], Array<AuditLog>>,
   'getOutstandingAmount' : ActorMethod<[string], bigint>,
   'getOutstandingAmountsBySchoolIds' : ActorMethod<
@@ -232,6 +270,19 @@ export interface _SERVICE {
   >,
   'updateStaffProfile' : ActorMethod<
     [Principal, string, StaffRole, string, string, string],
+    undefined
+  >,
+  'updateTrainingVisit' : ActorMethod<
+    [
+      string,
+      string,
+      bigint,
+      string,
+      string,
+      string,
+      string,
+      [] | [ExternalBlob],
+    ],
     undefined
   >,
 }

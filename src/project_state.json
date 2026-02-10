@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
+  "projectStateVersion": 25,
   "summary": "Role-based internal web application for Braindemics to manage shared School records across departments with strict RBAC, dashboards, form-based workflows, PDF uploads, search/filtering, and full audit logging; additionally, support a test/preview mode with dummy login to access screens without Internet Identity.",
   "architectural_notes": [
     "Single shared School ID is the primary key linking all department modules (payments, packing, training visits, academic queries).",
@@ -18,7 +18,11 @@
     "Login blocked with message \"Access not configured. Please contact your administrator to set up your staff profile.\" persists even after attempted setup; indicates staff profile ↔ Internet Identity principal mapping not being created/loaded correctly.",
     "Demo/Preview Mode login: entering dummy user ID/password does not route into the app/dashboard; user cannot access pages to explore the app.",
     "Demo/Preview Mode: key module flows are not fully working end-to-end (school registration/reflection across pages, outstanding updates, packing edits), preventing full-page testing in demo mode.",
-    "School registration fails with runtime error: \"Do not know how to serialize a BigInt\" (likely BigInt value being returned/JSON-serialized in API response)."
+    "School registration fails with runtime error: \"Do not know how to serialize a BigInt\" (likely BigInt value being returned/JSON-serialized in API response).",
+    "Demo/Preview Mode can get stuck in an infinite loading state when localStorage persistence fails (e.g., BigInt serialization error), preventing the UI from completing data load.",
+    "Training page Edit option currently renders without a background color (transparent/no background), causing readability/UI issues; needs white background styling.",
+    "Demo/Preview Mode top-banner role switcher dropdown background is not white (needs light-mode white background).",
+    "Training Visit form: entire form container background is not white in light mode (needs solid white surface)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -285,6 +289,166 @@
         "REQ-37"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-fix-demo-preview-mode-infinite-loading-by-ensuring-demo-mode-react-query-hooks-run-even-when-the-backend-actor-is-not-available-so-dashboard-pages-e-g-marketing-admin-dashboards-stop-showing-endless-loading-states-in-demo-mode",
+      "title": "Fix Demo/Preview Mode infinite loading by ensuring demo-mode React Query hooks run even when the backend actor is not available, so dashboard pages (e.g., Marketing/Admin dashboards) stop showing endless loading states in demo mode.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-demo-preview-mode-remains-resilient-if-localstorage-contains-corrupted-unparseable-demo-data-by-preventing-hard-failures-and-presenting-a-clear-english-fallback-behavior-that-allows-navigation-to-continue",
+      "title": "Ensure Demo/Preview Mode remains resilient if localStorage contains corrupted/unparseable demo data by preventing hard failures and presenting a clear, English fallback behavior that allows navigation to continue.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-demo-preview-mode-make-accounts-able-to-view-and-update-the-selected-school-s-outstanding-amount-from-the-accounts-workflow-and-ensure-the-updated-outstanding-amount-is-persisted-in-demo-localstorage-and-reflected-immediately-anywhere-the-school-is-viewed-including-marketing",
+      "title": "In Demo/Preview Mode, make Accounts able to view and update the selected school’s Outstanding Amount from the Accounts workflow, and ensure the updated outstanding amount is persisted in demo localStorage and reflected immediately anywhere the school is viewed (including Marketing).",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-marketing-dashboard-page-ui-to-remove-the-register-school-button-and-instead-show-1-total-schools-2-total-outstanding-amount-sum-across-schools-and-3-a-schools-section-that-lists-every-school-with-its-outstanding-amount-selecting-a-school-must-show-detailed-school-information-including-outstanding-amount-and-packing-details-sourced-from-packing-updates-dispatch-information-and-class-theme-counts",
+      "title": "Update the Marketing dashboard/page UI to remove the “Register School” button and instead show: (1) Total Schools, (2) Total Outstanding Amount (sum across schools), and (3) a schools section that lists every school with its outstanding amount; selecting a school must show detailed school information including outstanding amount and packing details sourced from Packing updates (dispatch information and Class/Theme/Counts).",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-demo-preview-mode-make-training-module-school-workflows-fully-functional-when-a-trainer-selects-opens-a-school-they-can-1-create-academic-queries-for-that-school-2-log-training-visits-with-purpose-reason-of-visit-contacted-person-name-contacted-person-mobile-number-and-observations-and-3-attach-upload-a-file-as-part-of-the-training-visit-record-all-of-this-must-persist-in-demo-localstorage-and-be-viewable-after-reload",
+      "title": "In Demo/Preview Mode, make Training module school workflows fully functional: when a trainer selects/opens a school, they can (1) create academic queries for that school, (2) log training visits with Purpose/Reason of visit, Contacted Person name, Contacted Person mobile number, and observations, and (3) attach/upload a file as part of the training visit record; all of this must persist in demo localStorage and be viewable after reload.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-demo-preview-mode-make-the-academic-module-receive-trainer-raised-queries-and-allow-academic-users-to-respond-and-update-query-status-any-status-updates-and-responses-must-persist-in-demo-localstorage-and-reflect-back-on-the-trainer-s-query-views-for-the-same-query",
+      "title": "In Demo/Preview Mode, make the Academic module receive trainer-raised queries and allow academic users to respond and update query status; any status updates and responses must persist in demo localStorage and reflect back on the trainer’s query views for the same query.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-demo-localstorage-data-store-to-support-persistence-and-retrieval-for-training-visits-including-attached-file-metadata-content-representation-and-academic-queries-including-status-and-responses-using-a-bigint-safe-serialization-strategy-store-bigint-as-strings-and-resilient-parsing-with-reset-fallback-behavior-consistent-with-existing-demo-data-store-patterns",
+      "title": "Extend the demo localStorage data store to support persistence and retrieval for Training Visits (including attached file metadata/content representation) and Academic Queries (including status and responses), using a BigInt-safe serialization strategy (store bigint as strings) and resilient parsing with reset/fallback behavior consistent with existing demo data store patterns.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-demo-mode-ui-mutation-gating-so-that-demo-workflows-required-for-end-to-end-testing-are-allowed-outstanding-amount-updates-packing-updates-counts-training-visit-logging-with-file-attach-trainer-query-creation-academic-query-response-status-updates-while-keeping-non-required-mutations-still-blocked-in-demo-mode-with-clear-english-messages",
+      "title": "Update demo-mode UI mutation gating so that demo workflows required for end-to-end testing are allowed (Outstanding Amount updates, Packing updates/counts, Training visit logging with file attach, Trainer query creation, Academic query response/status updates), while keeping non-required mutations still blocked in demo mode with clear English messages.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-admin-can-view-consolidated-visibility-into-demo-mode-updates-across-modules-outstanding-amounts-packing-status-counts-training-visits-and-academic-queries-including-statuses-responses-so-admin-can-know-all-of-these-pages-updates-and-details-during-demo-testing",
+      "title": "Ensure Admin can view consolidated visibility into demo-mode updates across modules (Outstanding Amounts, Packing status/counts, Training visits, and Academic Queries including statuses/responses), so Admin can “know all of these pages updates and details” during demo testing.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-academic-queries-list-ui-to-display-the-school-name-alongside-the-school-id-for-every-query-using-the-existing-schools-data-as-the-source-of-truth-for-mapping-schoolid-school-name",
+      "title": "Update the Academic Queries list UI to display the School Name alongside the School ID for every query, using the existing Schools data as the source of truth for mapping schoolId -> school.name.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-solved-queries-overview-to-the-training-dashboard-alongside-the-existing-summary-cards-based-on-academic-queries-with-status-resolved",
+      "title": "Add a “Solved Queries” overview to the Training Dashboard, alongside the existing summary cards, based on academic queries with status = resolved.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-edit-option-for-existing-training-visit-records-on-the-school-training-page-allowing-users-to-update-the-visit-details-visit-date-purpose-reason-visiting-person-contacted-person-mobile-observations-and-optionally-replace-remove-the-attached-proof-file-and-persist-the-updates",
+      "title": "Add an Edit option for existing Training Visit records on the School Training page, allowing users to update the visit details (visit date, purpose/reason, visiting person, contacted person mobile, observations, and optionally replace/remove the attached proof file) and persist the updates.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-an-admin-workflow-where-an-admin-can-select-a-school-and-view-a-single-consolidated-school-details-page-that-combines-the-latest-data-from-all-modules-school-core-details-outstanding-amount-packing-status-counts-training-visits-academic-queries-and-shows-who-last-updated-each-section-name-based-on-login-staff-profile-and-when-it-was-last-updated",
+      "title": "Create an Admin workflow where an Admin can select a school and view a single consolidated school details page that combines the latest data from all modules (School core details, Outstanding Amount, Packing status + counts, Training visits, Academic queries), and shows who last updated each section (name based on login/staff profile) and when it was last updated.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-the-provided-brand-palette-across-the-ui-brand-heading-accents-and-component-primary-accent-colors-using-e73d4b-brand-red-3bbcc4-and-28b06f-while-not-changing-any-background-colors-anywhere-in-the-app",
+      "title": "Apply the provided brand palette across the UI (Brand/heading accents and component primary/accent colors) using: #e73d4b (brand red), #3bbcc4, and #28b06f, while not changing any background colors anywhere in the app.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-new-modified-flows-academic-queries-display-training-dashboard-solved-overview-training-visit-editing-admin-consolidated-school-details-include-robust-error-handling-and-do-not-introduce-crashes-errors-must-be-shown-in-clear-english-and-avoid-bigint-json-serialization-pitfalls",
+      "title": "Ensure all new/modified flows (Academic Queries display, Training Dashboard solved overview, Training Visit editing, Admin consolidated school details) include robust error handling and do not introduce crashes; errors must be shown in clear English and avoid BigInt JSON serialization pitfalls.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-training-module-edit-experience-so-the-create-edit-training-visit-dialog-always-renders-with-an-explicit-solid-white-light-mode-solid-app-background-theme-background-and-does-not-appear-transparent-or-without-background-color-update-the-dialog-styling-in-frontend-src-pages-training-schooltrainingpage-tsx-so-the-dialog-content-area-clearly-separates-from-the-overlay-and-page-content-e-g-explicit-background-border-and-shadow-while-keeping-all-existing-fields-labels-and-actions-unchanged",
+      "title": "Fix the Training module “Edit” experience so the Create/Edit Training Visit dialog always renders with an explicit solid white (light mode) / solid app background (theme background) and does not appear transparent or “without background color”. Update the dialog styling in `frontend/src/pages/training/SchoolTrainingPage.tsx` so the dialog content area clearly separates from the overlay and page content (e.g., explicit background, border, and shadow) while keeping all existing fields, labels, and actions unchanged.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-additional-appropriate-background-colors-where-needed-as-a-small-consistent-ui-polish-pass-focused-on-training-module-screens-only-to-avoid-unintended-global-design-changes-ensure-training-pages-use-consistent-surface-styling-for-key-sections-page-container-cards-and-any-inline-detail-blocks-using-existing-tailwind-theme-tokens-bg-background-bg-card-bg-muted-etc-so-no-section-appears-visually-unfinished-or-blends-into-the-page-background",
+      "title": "Apply additional “appropriate background colors where needed” as a small, consistent UI polish pass focused on Training module screens only (to avoid unintended global design changes): ensure Training pages use consistent surface styling for key sections (page container, cards, and any inline detail blocks) using existing Tailwind/theme tokens (`bg-background`, `bg-card`, `bg-muted`, etc.) so no section appears visually unfinished or blends into the page background.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-ui-changes-do-not-introduce-runtime-errors-and-that-any-user-facing-error-messages-remain-clear-english-specifically-verify-that-opening-closing-the-training-visit-dialog-create-and-edit-saving-and-canceling-do-not-throw-errors-and-do-not-break-demo-preview-mode-behavior",
+      "title": "Ensure the UI changes do not introduce runtime errors and that any user-facing error messages remain clear English. Specifically verify that opening/closing the Training Visit dialog (create and edit), saving, and canceling do not throw errors and do not break Demo/Preview Mode behavior.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-demo-preview-mode-role-switcher-dropdown-in-the-top-banner-so-its-trigger-and-opened-dropdown-surface-render-with-a-solid-white-background-in-light-mode-while-preserving-existing-styling-behavior-in-dark-mode",
+      "title": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-training-module-training-visit-create-edit-form-container-to-have-a-solid-white-background-in-light-mode-entire-form-container-while-preserving-existing-styling-behavior-in-dark-mode",
+      "title": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -407,6 +571,94 @@
     {
       "id": "AR-20",
       "summary": "Demo/Preview Mode: ensure all major pages/sections are usable end-to-end (register school, reflect across modules, update outstanding, packing edits) without broken flows",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Demo/Preview Mode: Accounts page must show selected school outstanding payment and allow updating/saving outstanding via an action; updated outstanding must reflect in Marketing (and other relevant views)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Marketing page updates: remove Register School button; show Total Schools and Total Outstanding; list each school with its outstanding; selecting a school shows full school details + outstanding + packing dispatch/return details + Class/Theme/Counts (from Packing)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Demo/Preview Mode: Training page must allow selecting a school to create Queries and log/update Training Visits (purpose, contacted person, mobile) and support file upload",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Demo/Preview Mode: Academic page must receive Trainer-raised queries and allow updating query status; status changes must reflect back on Trainer page",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Admin visibility: Admin should be able to view/monitor updates and details across Accounts/Marketing/Packing/Training/Academic (outstanding, packing details, visits, queries, statuses)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Academic Queries list/table: show School Name alongside School ID for each query",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Training Dashboard: add a solved queries overview (summary section for solved queries)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Training Visits: add an edit option to update existing training visit details",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Admin School details view: when selecting a school, show consolidated details from all modules (Accounts/Marketing/Packing/Training/Academic) and display who last updated each section/field based on login identity/audit data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "UI theme update: set Brand Name color to #e73d4b and use palette (#3bbcc4, #e73d4b, #28b06f) across UI components without changing any background colors",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Extend the backend TrainingVisit model and APIs to support updating an existing training visit, including audit logging of the update action with timestamp and initiator principal.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Add/extend backend read APIs needed for the Admin consolidated school details view to efficiently retrieve (a) consolidated school-module data and (b) the latest relevant audit/update metadata per section, including initiator principal so the frontend can resolve names.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "UI polish/fix: Training → Edit screen should have a white background (it currently appears without background); apply additional appropriate background colors across screens as needed; do NOT implement the blurry header background (de-scoped due to missing header path).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "UI fix (light mode): Demo/Preview Mode top-banner role switcher dropdown background should be white; Training Visit form container background should be white (entire form container, not just dialog content).",
       "reqIds": [],
       "status": "pending"
     }

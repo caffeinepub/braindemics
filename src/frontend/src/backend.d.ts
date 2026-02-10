@@ -23,6 +23,12 @@ export interface PackingCount {
     classType: PackingClass;
     packedCount: bigint;
 }
+export interface SectionMetadata {
+    section: string;
+    lastUpdatedBy?: Principal;
+    lastUpdatedTimestamp?: bigint;
+    lastUpdatedByName: string;
+}
 export interface AuditLog {
     id: string;
     action: string;
@@ -31,16 +37,6 @@ export interface AuditLog {
     timestamp: bigint;
     details: string;
     entityType: string;
-}
-export interface AcademicQuery {
-    id: string;
-    status: Variant_resolved_open;
-    lastUpdateTimestamp: bigint;
-    schoolId: string;
-    queries: string;
-    response?: string;
-    createdTimestamp: bigint;
-    raisedBy: Principal;
 }
 export interface StaffProfile {
     principal: Principal;
@@ -56,6 +52,27 @@ export interface FilterCriteria {
     filterDateRange?: [bigint, bigint];
     filterEntityId?: string;
     filterInitiator?: Principal;
+}
+export interface AcademicQueryExtended {
+    id: string;
+    status: Variant_resolved_open;
+    lastUpdateTimestamp: bigint;
+    schoolId: string;
+    queries: string;
+    response?: string;
+    lastUpdatedByName: string;
+    createdTimestamp: bigint;
+    raisedBy: Principal;
+}
+export interface AcademicQuery {
+    id: string;
+    status: Variant_resolved_open;
+    lastUpdateTimestamp: bigint;
+    schoolId: string;
+    queries: string;
+    response?: string;
+    createdTimestamp: bigint;
+    raisedBy: Principal;
 }
 export interface TrainingVisit {
     id: string;
@@ -92,6 +109,16 @@ export interface School {
     createdTimestamp: bigint;
     contactNumber: string;
     studentCount: bigint;
+}
+export interface ConsolidatedSchoolModuleData {
+    school: School;
+    packingCounts: Array<PackingCount>;
+    sectionMetadata: Array<SectionMetadata>;
+    academicQueries: Array<AcademicQuery>;
+    trainingVisits: Array<TrainingVisit>;
+    outstandingAmount: bigint;
+    packingStatus?: PackingStatus;
+    lastActionByModule: Array<[string, Principal | null, string, bigint | null]>;
 }
 export interface UserProfile {
     role: StaffRole;
@@ -140,10 +167,12 @@ export interface backendInterface {
     createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
     createStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     createTrainingVisit(schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<string>;
+    getAcademicQueriesBySchoolWithMetadata(schoolId: string): Promise<Array<AcademicQueryExtended>>;
     getAcademicQuery(id: string): Promise<AcademicQuery>;
     getAuditLog(entryId: string): Promise<AuditLog>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getConsolidatedSchoolDetails(schoolId: string): Promise<ConsolidatedSchoolModuleData | null>;
     getFilteredAuditLogs(criteria: FilterCriteria): Promise<Array<AuditLog>>;
     getOutstandingAmount(schoolId: string): Promise<bigint>;
     getOutstandingAmountsBySchoolIds(schoolIds: Array<string>): Promise<Array<[string, bigint]>>;
@@ -169,4 +198,5 @@ export interface backendInterface {
     setOutstandingAmount(schoolId: string, amount: bigint): Promise<void>;
     updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
     updateStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
+    updateTrainingVisit(id: string, schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<void>;
 }

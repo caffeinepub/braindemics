@@ -48,6 +48,17 @@ export const StaffRole = IDL.Variant({
   'training' : IDL.Null,
 });
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const AcademicQueryExtended = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Variant({ 'resolved' : IDL.Null, 'open' : IDL.Null }),
+  'lastUpdateTimestamp' : IDL.Int,
+  'schoolId' : IDL.Text,
+  'queries' : IDL.Text,
+  'response' : IDL.Opt(IDL.Text),
+  'lastUpdatedByName' : IDL.Text,
+  'createdTimestamp' : IDL.Int,
+  'raisedBy' : IDL.Principal,
+});
 export const AcademicQuery = IDL.Record({
   'id' : IDL.Text,
   'status' : IDL.Variant({ 'resolved' : IDL.Null, 'open' : IDL.Null }),
@@ -74,32 +85,6 @@ export const UserProfile = IDL.Record({
   'contactNumber' : IDL.Text,
   'department' : IDL.Text,
 });
-export const FilterCriteria = IDL.Record({
-  'filterEntityType' : IDL.Opt(IDL.Text),
-  'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
-  'filterEntityId' : IDL.Opt(IDL.Text),
-  'filterInitiator' : IDL.Opt(IDL.Principal),
-});
-export const PackingCount = IDL.Record({
-  'theme' : PackingTheme,
-  'addOnCount' : IDL.Nat,
-  'totalCount' : IDL.Nat,
-  'lastUpdateTimestamp' : IDL.Int,
-  'createdTimestamp' : IDL.Int,
-  'classType' : PackingClass,
-  'packedCount' : IDL.Nat,
-});
-export const PackingStatus = IDL.Record({
-  'kitCount' : IDL.Nat,
-  'addOnCount' : IDL.Nat,
-  'currentTheme' : IDL.Text,
-  'dispatched' : IDL.Bool,
-  'dispatchDetails' : IDL.Opt(IDL.Text),
-  'lastUpdateTimestamp' : IDL.Int,
-  'schoolId' : IDL.Text,
-  'createdTimestamp' : IDL.Int,
-  'packed' : IDL.Bool,
-});
 export const School = IDL.Record({
   'id' : IDL.Text,
   'city' : IDL.Text,
@@ -114,14 +99,20 @@ export const School = IDL.Record({
   'contactNumber' : IDL.Text,
   'studentCount' : IDL.Nat,
 });
-export const StaffProfile = IDL.Record({
-  'principal' : IDL.Principal,
-  'role' : StaffRole,
-  'fullName' : IDL.Text,
-  'email' : IDL.Text,
+export const PackingCount = IDL.Record({
+  'theme' : PackingTheme,
+  'addOnCount' : IDL.Nat,
+  'totalCount' : IDL.Nat,
+  'lastUpdateTimestamp' : IDL.Int,
   'createdTimestamp' : IDL.Int,
-  'contactNumber' : IDL.Text,
-  'department' : IDL.Text,
+  'classType' : PackingClass,
+  'packedCount' : IDL.Nat,
+});
+export const SectionMetadata = IDL.Record({
+  'section' : IDL.Text,
+  'lastUpdatedBy' : IDL.Opt(IDL.Principal),
+  'lastUpdatedTimestamp' : IDL.Opt(IDL.Int),
+  'lastUpdatedByName' : IDL.Text,
 });
 export const TrainingVisit = IDL.Record({
   'id' : IDL.Text,
@@ -133,6 +124,44 @@ export const TrainingVisit = IDL.Record({
   'classroomObservationProof' : IDL.Opt(ExternalBlob),
   'observations' : IDL.Text,
   'reason' : IDL.Text,
+});
+export const PackingStatus = IDL.Record({
+  'kitCount' : IDL.Nat,
+  'addOnCount' : IDL.Nat,
+  'currentTheme' : IDL.Text,
+  'dispatched' : IDL.Bool,
+  'dispatchDetails' : IDL.Opt(IDL.Text),
+  'lastUpdateTimestamp' : IDL.Int,
+  'schoolId' : IDL.Text,
+  'createdTimestamp' : IDL.Int,
+  'packed' : IDL.Bool,
+});
+export const ConsolidatedSchoolModuleData = IDL.Record({
+  'school' : School,
+  'packingCounts' : IDL.Vec(PackingCount),
+  'sectionMetadata' : IDL.Vec(SectionMetadata),
+  'academicQueries' : IDL.Vec(AcademicQuery),
+  'trainingVisits' : IDL.Vec(TrainingVisit),
+  'outstandingAmount' : IDL.Nat,
+  'packingStatus' : IDL.Opt(PackingStatus),
+  'lastActionByModule' : IDL.Vec(
+    IDL.Tuple(IDL.Text, IDL.Opt(IDL.Principal), IDL.Text, IDL.Opt(IDL.Int))
+  ),
+});
+export const FilterCriteria = IDL.Record({
+  'filterEntityType' : IDL.Opt(IDL.Text),
+  'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
+  'filterEntityId' : IDL.Opt(IDL.Text),
+  'filterInitiator' : IDL.Opt(IDL.Principal),
+});
+export const StaffProfile = IDL.Record({
+  'principal' : IDL.Principal,
+  'role' : StaffRole,
+  'fullName' : IDL.Text,
+  'email' : IDL.Text,
+  'createdTimestamp' : IDL.Int,
+  'contactNumber' : IDL.Text,
+  'department' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -217,10 +246,20 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'getAcademicQueriesBySchoolWithMetadata' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(AcademicQueryExtended)],
+      ['query'],
+    ),
   'getAcademicQuery' : IDL.Func([IDL.Text], [AcademicQuery], ['query']),
   'getAuditLog' : IDL.Func([IDL.Text], [AuditLog], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getConsolidatedSchoolDetails' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(ConsolidatedSchoolModuleData)],
+      ['query'],
+    ),
   'getFilteredAuditLogs' : IDL.Func(
       [FilterCriteria],
       [IDL.Vec(AuditLog)],
@@ -301,6 +340,20 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'updateTrainingVisit' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Int,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Opt(ExternalBlob),
+      ],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -346,6 +399,17 @@ export const idlFactory = ({ IDL }) => {
     'training' : IDL.Null,
   });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const AcademicQueryExtended = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Variant({ 'resolved' : IDL.Null, 'open' : IDL.Null }),
+    'lastUpdateTimestamp' : IDL.Int,
+    'schoolId' : IDL.Text,
+    'queries' : IDL.Text,
+    'response' : IDL.Opt(IDL.Text),
+    'lastUpdatedByName' : IDL.Text,
+    'createdTimestamp' : IDL.Int,
+    'raisedBy' : IDL.Principal,
+  });
   const AcademicQuery = IDL.Record({
     'id' : IDL.Text,
     'status' : IDL.Variant({ 'resolved' : IDL.Null, 'open' : IDL.Null }),
@@ -372,32 +436,6 @@ export const idlFactory = ({ IDL }) => {
     'contactNumber' : IDL.Text,
     'department' : IDL.Text,
   });
-  const FilterCriteria = IDL.Record({
-    'filterEntityType' : IDL.Opt(IDL.Text),
-    'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
-    'filterEntityId' : IDL.Opt(IDL.Text),
-    'filterInitiator' : IDL.Opt(IDL.Principal),
-  });
-  const PackingCount = IDL.Record({
-    'theme' : PackingTheme,
-    'addOnCount' : IDL.Nat,
-    'totalCount' : IDL.Nat,
-    'lastUpdateTimestamp' : IDL.Int,
-    'createdTimestamp' : IDL.Int,
-    'classType' : PackingClass,
-    'packedCount' : IDL.Nat,
-  });
-  const PackingStatus = IDL.Record({
-    'kitCount' : IDL.Nat,
-    'addOnCount' : IDL.Nat,
-    'currentTheme' : IDL.Text,
-    'dispatched' : IDL.Bool,
-    'dispatchDetails' : IDL.Opt(IDL.Text),
-    'lastUpdateTimestamp' : IDL.Int,
-    'schoolId' : IDL.Text,
-    'createdTimestamp' : IDL.Int,
-    'packed' : IDL.Bool,
-  });
   const School = IDL.Record({
     'id' : IDL.Text,
     'city' : IDL.Text,
@@ -412,14 +450,20 @@ export const idlFactory = ({ IDL }) => {
     'contactNumber' : IDL.Text,
     'studentCount' : IDL.Nat,
   });
-  const StaffProfile = IDL.Record({
-    'principal' : IDL.Principal,
-    'role' : StaffRole,
-    'fullName' : IDL.Text,
-    'email' : IDL.Text,
+  const PackingCount = IDL.Record({
+    'theme' : PackingTheme,
+    'addOnCount' : IDL.Nat,
+    'totalCount' : IDL.Nat,
+    'lastUpdateTimestamp' : IDL.Int,
     'createdTimestamp' : IDL.Int,
-    'contactNumber' : IDL.Text,
-    'department' : IDL.Text,
+    'classType' : PackingClass,
+    'packedCount' : IDL.Nat,
+  });
+  const SectionMetadata = IDL.Record({
+    'section' : IDL.Text,
+    'lastUpdatedBy' : IDL.Opt(IDL.Principal),
+    'lastUpdatedTimestamp' : IDL.Opt(IDL.Int),
+    'lastUpdatedByName' : IDL.Text,
   });
   const TrainingVisit = IDL.Record({
     'id' : IDL.Text,
@@ -431,6 +475,44 @@ export const idlFactory = ({ IDL }) => {
     'classroomObservationProof' : IDL.Opt(ExternalBlob),
     'observations' : IDL.Text,
     'reason' : IDL.Text,
+  });
+  const PackingStatus = IDL.Record({
+    'kitCount' : IDL.Nat,
+    'addOnCount' : IDL.Nat,
+    'currentTheme' : IDL.Text,
+    'dispatched' : IDL.Bool,
+    'dispatchDetails' : IDL.Opt(IDL.Text),
+    'lastUpdateTimestamp' : IDL.Int,
+    'schoolId' : IDL.Text,
+    'createdTimestamp' : IDL.Int,
+    'packed' : IDL.Bool,
+  });
+  const ConsolidatedSchoolModuleData = IDL.Record({
+    'school' : School,
+    'packingCounts' : IDL.Vec(PackingCount),
+    'sectionMetadata' : IDL.Vec(SectionMetadata),
+    'academicQueries' : IDL.Vec(AcademicQuery),
+    'trainingVisits' : IDL.Vec(TrainingVisit),
+    'outstandingAmount' : IDL.Nat,
+    'packingStatus' : IDL.Opt(PackingStatus),
+    'lastActionByModule' : IDL.Vec(
+      IDL.Tuple(IDL.Text, IDL.Opt(IDL.Principal), IDL.Text, IDL.Opt(IDL.Int))
+    ),
+  });
+  const FilterCriteria = IDL.Record({
+    'filterEntityType' : IDL.Opt(IDL.Text),
+    'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
+    'filterEntityId' : IDL.Opt(IDL.Text),
+    'filterInitiator' : IDL.Opt(IDL.Principal),
+  });
+  const StaffProfile = IDL.Record({
+    'principal' : IDL.Principal,
+    'role' : StaffRole,
+    'fullName' : IDL.Text,
+    'email' : IDL.Text,
+    'createdTimestamp' : IDL.Int,
+    'contactNumber' : IDL.Text,
+    'department' : IDL.Text,
   });
   
   return IDL.Service({
@@ -515,10 +597,20 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
+    'getAcademicQueriesBySchoolWithMetadata' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(AcademicQueryExtended)],
+        ['query'],
+      ),
     'getAcademicQuery' : IDL.Func([IDL.Text], [AcademicQuery], ['query']),
     'getAuditLog' : IDL.Func([IDL.Text], [AuditLog], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getConsolidatedSchoolDetails' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(ConsolidatedSchoolModuleData)],
+        ['query'],
+      ),
     'getFilteredAuditLogs' : IDL.Func(
         [FilterCriteria],
         [IDL.Vec(AuditLog)],
@@ -604,6 +696,20 @@ export const idlFactory = ({ IDL }) => {
       ),
     'updateStaffProfile' : IDL.Func(
         [IDL.Principal, IDL.Text, StaffRole, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'updateTrainingVisit' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Int,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Opt(ExternalBlob),
+        ],
         [],
         [],
       ),

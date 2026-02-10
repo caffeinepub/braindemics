@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import { useListAllAcademicQueries, useRespondToAcademicQuery } from '../../hooks/useQueries';
+import { useListAllAcademicQueries, useRespondToAcademicQuery, useListAllSchools } from '../../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Variant_resolved_open } from '../../backend';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 export default function AcademicQueriesPage() {
   const { data: queries, isLoading } = useListAllAcademicQueries();
+  const { data: schools, isLoading: schoolsLoading } = useListAllSchools();
   const respondToQuery = useRespondToAcademicQuery();
 
   const [selectedQuery, setSelectedQuery] = useState<any>(null);
@@ -21,6 +23,14 @@ export default function AcademicQueriesPage() {
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState<'open' | 'resolved'>('open');
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'resolved'>('all');
+
+  // Build school ID to name map
+  const schoolMap = new Map<string, string>();
+  if (schools) {
+    schools.forEach(school => {
+      schoolMap.set(school.id, school.name);
+    });
+  }
 
   const filteredQueries = queries?.filter((q) => {
     if (filterStatus === 'all') return true;
@@ -51,7 +61,7 @@ export default function AcademicQueriesPage() {
       setSelectedQuery(null);
       setResponse('');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to submit response');
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -77,7 +87,7 @@ export default function AcademicQueriesPage() {
           </Select>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading || schoolsLoading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full" />
@@ -85,31 +95,35 @@ export default function AcademicQueriesPage() {
             </div>
           ) : filteredQueries && filteredQueries.length > 0 ? (
             <div className="space-y-3">
-              {filteredQueries.map((query) => (
-                <div key={query.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <span className="text-sm font-medium">Query #{query.id}</span>
-                      <p className="text-xs text-muted-foreground mt-1">School ID: {query.schoolId}</p>
+              {filteredQueries.map((query) => {
+                const schoolName = schoolMap.get(query.schoolId) || 'Unknown';
+                return (
+                  <div key={query.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <span className="text-sm font-medium">Query #{query.id}</span>
+                        <p className="text-xs text-muted-foreground mt-1">School Name: {schoolName}</p>
+                        <p className="text-xs text-muted-foreground">School ID: {query.schoolId}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={query.status === 'resolved' ? 'default' : 'secondary'}>
+                          {query.status === 'resolved' ? 'Resolved' : 'Open'}
+                        </Badge>
+                        <Button variant="outline" size="sm" onClick={() => openResponseDialog(query)}>
+                          Respond
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={query.status === 'resolved' ? 'default' : 'secondary'}>
-                        {query.status === 'resolved' ? 'Resolved' : 'Open'}
-                      </Badge>
-                      <Button variant="outline" size="sm" onClick={() => openResponseDialog(query)}>
-                        Respond
-                      </Button>
-                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{query.queries}</p>
+                    {query.response && (
+                      <div className="mt-3 p-3 bg-muted rounded-md">
+                        <p className="text-xs font-medium mb-1">Response:</p>
+                        <p className="text-sm">{query.response}</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{query.queries}</p>
-                  {query.response && (
-                    <div className="mt-3 p-3 bg-muted rounded-md">
-                      <p className="text-xs font-medium mb-1">Response:</p>
-                      <p className="text-sm">{query.response}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
@@ -145,7 +159,7 @@ export default function AcademicQueriesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger>
+                    <SelectTrigger id="status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -154,10 +168,15 @@ export default function AcademicQueriesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" disabled={respondToQuery.isPending}>
-                  {respondToQuery.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Submit Response
-                </Button>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setResponseDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={respondToQuery.isPending}>
+                    {respondToQuery.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit Response
+                  </Button>
+                </DialogFooter>
               </form>
             </div>
           )}

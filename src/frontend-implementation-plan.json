@@ -1,48 +1,39 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix BigInt localStorage serialization in demo school registration",
+  "title": "Light-mode solid white surfaces for Demo role switcher dropdown and Training Visit form",
   "requirements": [
     {
-      "id": "REQ-36",
-      "summary": "Make Demo/Preview Mode School localStorage persistence JSON-compatible by encoding bigint fields on write and restoring them on read with backward-tolerant parsing.",
+      "id": "REQ-58",
+      "summary": "Ensure the Demo/Preview Mode role switcher trigger and dropdown content render with solid white backgrounds in light mode while preserving existing dark-mode styling and behavior.",
       "acceptanceCriteria": [
-        "In Demo/Preview Mode, submitting the Register New School form successfully creates the school without any runtime errors.",
-        "Schools saved in Demo/Preview Mode are persisted across reloads (localStorage) and can be listed/selected on pages that use the school list.",
-        "All bigint fields in a School object (e.g., studentCount, createdTimestamp, lastUpdateTimestamp) are stored in localStorage in a JSON-compatible way (e.g., as strings) and converted back to bigint when reading.",
-        "Existing demo schools already stored in localStorage (if any) do not cause the app to crash; parsing should be backward-tolerant (e.g., handle numbers/strings and convert to bigint)."
+        "When Demo/Preview Mode is active, the role switcher SelectTrigger in the top banner renders with a solid white background in light mode.",
+        "When the role switcher dropdown is opened, the dropdown content surface renders with a solid white background in light mode (no transparency).",
+        "In dark mode, the role switcher retains the existing dark-mode look and remains readable (do not force a white background in dark mode).",
+        "No changes to role-switching behavior: selecting a role still updates the demo role and navigates to the correct dashboard route."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/demo/demoDataStore.ts",
+          "path": "frontend/src/components/demo/DemoPreviewBanner.tsx",
           "operation": "modify",
-          "description": "Update Demo/Preview Mode school persistence to avoid JSON.stringify(BigInt) failures by serializing School bigint fields (studentCount, createdTimestamp, lastUpdateTimestamp) as strings when writing, and converting them back to bigint when reading. Make parsing backward-tolerant for pre-existing records by accepting bigint-like strings, numbers, or missing values without crashing, defaulting safely where needed."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Ensure demo-mode school listing and retrieval continue to return School objects with bigint-typed fields coming from demoDataStore after the serialization changes (no runtime errors; compatible with UI usages such as Number(school.studentCount))."
+          "description": "Update the role switcher SelectTrigger and SelectContent className styling to force a solid white surface in light mode (e.g., bg-white and non-transparent overrides), while explicitly preserving the existing dark-mode surface tokens via dark: classes. Keep all role-switching logic unchanged and avoid touching any files under frontend/src/components/ui."
         }
       ]
     },
     {
-      "id": "REQ-37",
-      "summary": "Ensure school registration error handling shows a clear English message and never JSON-serializes unknown error objects that may contain bigint values.",
+      "id": "REQ-59",
+      "summary": "Ensure the Training Visit create/edit dialog’s form container renders with a solid white background in light mode while preserving existing dark-mode styling and functionality.",
       "acceptanceCriteria": [
-        "If school registration fails (demo or non-demo), the UI shows an English toast message that does not include \"Do not know how to serialize a BigInt\".",
-        "The Register New School page remains usable after a failure (no blank screen, no unhandled promise rejection).",
-        "If an error message is displayed from an exception, it is extracted safely as a string (without JSON.stringify on unknown objects)."
+        "On the Training Visits page, opening the Log Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
+        "On the Training Visits page, opening the Edit Training Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
+        "In dark mode, the dialog keeps the existing dark-mode background tokens and remains readable (do not force a white background in dark mode).",
+        "Opening and closing the dialog, saving, and canceling do not produce runtime errors and do not break Demo/Preview Mode behavior."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/getErrorMessage.ts",
-          "operation": "create",
-          "description": "Add a small utility to safely convert unknown thrown values into a user-friendly English message without using JSON.stringify on unknown objects (to avoid BigInt serialization). Include special-casing so messages containing \"Do not know how to serialize a BigInt\" are replaced with a clear generic failure message."
-        },
-        {
-          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "path": "frontend/src/pages/training/SchoolTrainingPage.tsx",
           "operation": "modify",
-          "description": "Use the new safe error-message utility for the registration submit catch path. Ensure the toast message is always clear English and never surfaces \"Do not know how to serialize a BigInt\"; keep the page interactive after failures (no rethrow / no unhandled promise rejection)."
+          "description": "Adjust the Create/Edit Visit DialogContent styling so the entire visit form container uses a solid white background in light mode (e.g., bg-white) and preserves existing dark-mode styling via dark: classes (keep current tokens/behavior for dark mode). Scope changes only to the training visit dialog (not global styles) and do not modify any files under frontend/src/components/ui."
         }
       ]
     }

@@ -1,53 +1,62 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useListAllSchools, useListAllAuditLogs, useListAllStaff } from '../../hooks/useQueries';
+import { useListAllSchools, useGetOutstandingAmounts, useListAllPackingStatuses, useListAllAcademicQueries } from '../../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { School, Users, FileText, Activity, DollarSign, Plus } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import DemoDataUnavailableState from '../../components/demo/DemoDataUnavailableState';
-import { isDemoActive } from '../../demo/demoSession';
+import { GraduationCap, DollarSign, Package, MessageSquare } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { data: schools, isLoading: schoolsLoading, isError: schoolsError } = useListAllSchools();
-  const { data: staff, isLoading: staffLoading, isError: staffError } = useListAllStaff();
-  const { data: auditLogs, isLoading: logsLoading, isError: logsError } = useListAllAuditLogs();
+  const { data: schools, isLoading: schoolsLoading } = useListAllSchools();
+  const { data: outstandingAmounts, isLoading: outstandingLoading } = useGetOutstandingAmounts();
+  const { data: packingStatuses, isLoading: packingLoading } = useListAllPackingStatuses();
+  const { data: queries, isLoading: queriesLoading } = useListAllAcademicQueries();
 
-  const recentLogs = auditLogs?.slice(0, 10) || [];
-  const isDemo = isDemoActive();
+  const totalOutstanding = outstandingAmounts
+    ? Object.values(outstandingAmounts).reduce((sum, amount) => sum + amount, BigInt(0))
+    : BigInt(0);
+
+  const packedCount = packingStatuses?.filter(s => s.packed).length || 0;
+  const dispatchedCount = packingStatuses?.filter(s => s.dispatched).length || 0;
+  const openQueriesCount = queries?.filter(q => q.status === 'open').length || 0;
+
+  const packingStatusMap = new Map<string, any>();
+  packingStatuses?.forEach(status => {
+    packingStatusMap.set(status.schoolId, status);
+  });
+
+  const queriesCountMap = new Map<string, number>();
+  queries?.forEach(query => {
+    const count = queriesCountMap.get(query.schoolId) || 0;
+    queriesCountMap.set(query.schoolId, count + 1);
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">System overview and recent activity</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate({ to: '/admin/outstanding' })}>
-            <DollarSign className="h-4 w-4 mr-2" />
-            Outstanding Amounts
-          </Button>
-          <Button onClick={() => navigate({ to: '/marketing/schools/create' })}>
-            <Plus className="h-4 w-4 mr-2" />
-            Register School
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Overview of all school operations</p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
-            <School className="h-4 w-4 text-muted-foreground" />
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {schoolsLoading ? (
               <Skeleton className="h-8 w-16" />
-            ) : schoolsError && isDemo ? (
-              <div className="text-sm text-muted-foreground">N/A</div>
             ) : (
               <div className="text-2xl font-bold">{schools?.length || 0}</div>
             )}
@@ -56,73 +65,138 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Staff Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Outstanding</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {staffLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : staffError && isDemo ? (
-              <div className="text-sm text-muted-foreground">N/A</div>
+            {outstandingLoading ? (
+              <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold">{staff?.length || 0}</div>
+              <div className="text-2xl font-bold">₹{totalOutstanding.toString()}</div>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Packing Status</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {logsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : logsError && isDemo ? (
-              <div className="text-sm text-muted-foreground">N/A</div>
+            {packingLoading ? (
+              <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold">{auditLogs?.length || 0}</div>
+              <div className="text-sm">
+                <div className="text-2xl font-bold">{packedCount}/{schools?.length || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">Packed</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Open Queries</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {queriesLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="text-2xl font-bold">{openQueriesCount}</div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Activity */}
+      {/* Quick Actions */}
+      <div className="flex gap-2">
+        <Button onClick={() => navigate({ to: '/admin/staff' })}>
+          Manage Staff
+        </Button>
+        <Button variant="outline" onClick={() => navigate({ to: '/admin/outstanding' })}>
+          Set Outstanding Amounts
+        </Button>
+        <Button variant="outline" onClick={() => navigate({ to: '/admin/audit' })}>
+          View Audit Logs
+        </Button>
+      </div>
+
+      {/* Schools Overview Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
+          <CardTitle>Schools Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          {logsLoading ? (
-            <div className="space-y-3">
+          {schoolsLoading ? (
+            <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : logsError && isDemo ? (
-            <DemoDataUnavailableState message="Activity logs are not available in Demo/Preview Mode." />
-          ) : recentLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No activity yet</p>
+          ) : schools && schools.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>School Name</TableHead>
+                  <TableHead>Outstanding</TableHead>
+                  <TableHead>Packing Status</TableHead>
+                  <TableHead>Queries</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {schools.map((school) => {
+                  const outstanding = outstandingAmounts?.[school.id] || BigInt(0);
+                  const packingStatus = packingStatusMap.get(school.id);
+                  const queriesCount = queriesCountMap.get(school.id) || 0;
+
+                  return (
+                    <TableRow key={school.id}>
+                      <TableCell 
+                        className="font-medium cursor-pointer hover:underline"
+                        onClick={() => navigate({ to: '/admin/schools/$schoolId', params: { schoolId: school.id } })}
+                      >
+                        {school.name}
+                      </TableCell>
+                      <TableCell>₹{outstanding.toString()}</TableCell>
+                      <TableCell>
+                        {packingStatus ? (
+                          <div className="flex gap-1">
+                            <Badge variant={packingStatus.packed ? 'default' : 'secondary'} className="text-xs">
+                              {packingStatus.packed ? 'Packed' : 'Not Packed'}
+                            </Badge>
+                            {packingStatus.dispatched && (
+                              <Badge variant="default" className="text-xs">Dispatched</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No status</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {queriesCount > 0 ? (
+                          <Badge variant="secondary">{queriesCount}</Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">0</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate({ to: '/admin/schools/$schoolId', params: { schoolId: school.id } })}
+                        >
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           ) : (
-            <div className="space-y-3">
-              {recentLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{log.action.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">{log.details}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {log.entityType} • {formatDistanceToNow(Number(log.timestamp) / 1000000, { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-center text-muted-foreground py-8">No schools registered yet</p>
           )}
         </CardContent>
       </Card>

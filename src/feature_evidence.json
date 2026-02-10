@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-demo-preview-mode-localstorage-persistence-for-school-records-so-registering-a-school-does-not-throw-do-not-know-how-to-serialize-a-bigint-when-saving-to-localstorage",
-      "featureTitle": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
+      "featureId": "feature-update-the-demo-preview-mode-role-switcher-dropdown-in-the-top-banner-so-its-trigger-and-opened-dropdown-surface-render-with-a-solid-white-background-in-light-mode-while-preserving-existing-styling-behavior-in-dark-mode",
+      "featureTitle": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
       "files": [
-        "frontend/src/demo/demoDataStore.ts"
+        "frontend/src/components/demo/DemoPreviewBanner.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,16 +17,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-36"
+        "REQ-58"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-user-facing-error-handling-for-school-registration-never-attempts-to-json-serialize-raw-objects-containing-bigint-values-show-a-clear-english-error-message-when-school-registration-fails",
-      "featureTitle": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
+      "featureId": "feature-update-the-training-module-training-visit-create-edit-form-container-to-have-a-solid-white-background-in-light-mode-entire-form-container-while-preserving-existing-styling-behavior-in-dark-mode",
+      "featureTitle": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
       "files": [
-        "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-        "frontend/src/utils/getErrorMessage.ts"
+        "frontend/src/pages/training/SchoolTrainingPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -38,7 +37,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-37"
+        "REQ-59"
       ],
       "confidence": "high"
     }

@@ -1,13 +1,31 @@
 // UI guards and helpers for Demo/Preview Mode
-// Standardizes disabling mutations and showing appropriate messages
+// Action-scoped mutation gating for granular control
 
 import { isDemoActive } from './demoSession';
+
+// Actions that are explicitly allowed in demo mode
+const ALLOWED_DEMO_ACTIONS = new Set([
+  'outstanding-amount',
+  'packing-status',
+  'packing-count',
+  'training-visit',
+  'training-query',
+  'academic-response',
+]);
 
 export function shouldDisableMutations(): boolean {
   return isDemoActive();
 }
 
-export function demoDisabledReason(): string {
+export function isActionAllowedInDemo(action: string): boolean {
+  if (!isDemoActive()) return true;
+  return ALLOWED_DEMO_ACTIONS.has(action);
+}
+
+export function demoDisabledReason(action?: string): string {
+  if (action && ALLOWED_DEMO_ACTIONS.has(action)) {
+    return ''; // Action is allowed
+  }
   return 'This action is unavailable in Demo/Preview Mode';
 }
 

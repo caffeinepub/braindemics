@@ -7,13 +7,13 @@ export default function TrainingQueriesPage() {
   const { data: queries, isLoading } = useListAllAcademicQueries();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background min-h-screen p-6">
       <div>
         <h1 className="text-3xl font-bold">My Queries</h1>
         <p className="text-muted-foreground mt-1">View all academic queries you've raised</p>
       </div>
 
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>All Queries</CardTitle>
         </CardHeader>
@@ -27,7 +27,7 @@ export default function TrainingQueriesPage() {
           ) : queries && queries.length > 0 ? (
             <div className="space-y-3">
               {queries.map((query) => (
-                <div key={query.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                <div key={query.id} className="p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <span className="text-sm font-medium">Query #{query.id}</span>
@@ -39,7 +39,7 @@ export default function TrainingQueriesPage() {
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{query.queries}</p>
                   {query.response && (
-                    <div className="mt-3 p-3 bg-muted rounded-md">
+                    <div className="mt-3 p-3 bg-muted border border-border rounded-md">
                       <p className="text-xs font-medium mb-1">Response:</p>
                       <p className="text-sm">{query.response}</p>
                     </div>

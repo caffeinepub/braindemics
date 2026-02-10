@@ -11,6 +11,7 @@ import AcademicDashboardPage from './pages/dashboards/AcademicDashboardPage';
 import StaffManagementPage from './pages/admin/StaffManagementPage';
 import AuditLogPage from './pages/admin/AuditLogPage';
 import OutstandingAmountPage from './pages/admin/OutstandingAmountPage';
+import AdminSchoolDetailsPage from './pages/admin/AdminSchoolDetailsPage';
 import SchoolCreatePage from './pages/marketing/SchoolCreatePage';
 import SchoolDetailsPage from './pages/schools/SchoolDetailsPage';
 import SchoolPaymentsPage from './pages/accounts/SchoolPaymentsPage';
@@ -122,6 +123,12 @@ const outstandingAmountRoute = createRoute({
   component: OutstandingAmountPage,
 });
 
+const adminSchoolDetailsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/admin/schools/$schoolId',
+  component: AdminSchoolDetailsPage,
+});
+
 // Marketing routes
 const marketingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -214,6 +221,7 @@ export const routeTree = rootRoute.addChildren([
     staffManagementRoute,
     auditLogRoute,
     outstandingAmountRoute,
+    adminSchoolDetailsRoute,
     marketingDashboardRoute,
     schoolCreateRoute,
     accountsDashboardRoute,

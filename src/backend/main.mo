@@ -208,6 +208,37 @@ actor {
     filterDateRange : ?(Int, Int);
   };
 
+  // Extended types for consolidated school details
+  public type SectionMetadata = {
+    section : Text;
+    lastUpdatedBy : ?Principal;
+    lastUpdatedByName : Text;
+    lastUpdatedTimestamp : ?Int;
+  };
+
+  public type ConsolidatedSchoolModuleData = {
+    school : School;
+    outstandingAmount : Nat;
+    packingStatus : ?PackingStatus;
+    packingCounts : [PackingCount];
+    trainingVisits : [TrainingVisit];
+    academicQueries : [AcademicQuery];
+    sectionMetadata : [SectionMetadata];
+    lastActionByModule : [(Text, ?Principal, Text, ?Int)];
+  };
+
+  public type AcademicQueryExtended = {
+    id : Text;
+    schoolId : Text;
+    raisedBy : Principal;
+    queries : Text;
+    response : ?Text;
+    status : { #open; #resolved };
+    createdTimestamp : Int;
+    lastUpdateTimestamp : Int;
+    lastUpdatedByName : Text;
+  };
+
   // ============================================================================
   // PERSISTENT STORAGE
   // ============================================================================
@@ -288,6 +319,177 @@ actor {
       details;
     };
     auditLogs.add(id, entry);
+  };
+
+  // ============================================================================
+  // CONSOLIDATED SCHOOL DETAILS FOR ADMIN
+  // ============================================================================
+
+  func getLastUpdateForSection(schoolId : Text, moduleName : Text) : ?AuditLog {
+    let logs = auditLogs.values().toArray();
+
+    let matchingLogs = logs.filter(
+      func(log) {
+        log.entityId == schoolId and log.entityType == moduleName;
+      }
+    );
+
+    if (matchingLogs.size() == 0) { null } else {
+      ?matchingLogs[0];
+    };
+  };
+
+  func getLastActionByModule(schoolId : Text) : [(Text, ?Principal, Text, ?Int)] {
+    let modules = [
+      "School",
+      "OutstandingAmount",
+      "PackingStatus",
+      "PackingCount",
+      "TrainingVisit",
+      "AcademicQuery",
+    ];
+
+    modules.map(
+      func(moduleName) {
+        let lastUpdate = getLastUpdateForSection(schoolId, moduleName);
+        switch (lastUpdate) {
+          case (null) {
+            (moduleName, null, "", null);
+          };
+          case (?log) {
+            (moduleName, ?log.initiator, getUserName(log.initiator), ?log.timestamp);
+          };
+        };
+      }
+    );
+  };
+
+  func getUserName(principal : Principal) : Text {
+    switch (staffProfiles.get(principal)) {
+      case (null) { "Unknown" };
+      case (?profile) { profile.fullName };
+    };
+  };
+
+  func getSectionMetadata(schoolId : Text, section : Text) : SectionMetadata {
+    switch (getLastUpdateForSection(schoolId, section)) {
+      case (?log) {
+        {
+          section;
+          lastUpdatedBy = ?log.initiator;
+          lastUpdatedByName = getUserName(log.initiator);
+          lastUpdatedTimestamp = ?log.timestamp;
+        };
+      };
+      case (null) {
+        {
+          section;
+          lastUpdatedBy = null;
+          lastUpdatedByName = "";
+          lastUpdatedTimestamp = null;
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getConsolidatedSchoolDetails(schoolId : Text) : async ?ConsolidatedSchoolModuleData {
+    requireAdmin(caller);
+
+    switch (schools.get(schoolId)) {
+      case (null) { null };
+      case (?school) {
+        let outstanding = switch (outstandingAmounts.get(schoolId)) {
+          case (null) { 0 };
+          case (?amount) { amount.amount };
+        };
+
+        let packingStatus = packingStatuses.get(schoolId);
+
+        let packingCountsArray = packingCounts.values().toArray();
+        let filteredPackingCounts = packingCountsArray.filter(
+          func(count) {
+            count.classType == #preSchool or
+            count.classType == #class1 or
+            count.classType == #class2 or
+            count.classType == #class3 or
+            count.classType == #class4 or
+            count.classType == #class5
+          }
+        );
+
+        let trainingArray = trainingVisits.values().toArray();
+        let filteredTraining = trainingArray.filter(func(visit) { visit.schoolId == schoolId });
+
+        let academicArray = academicQueries.values().toArray();
+        let filteredAcademic = academicArray.filter(func(queries) { queries.schoolId == schoolId });
+
+        let sectionMetadata : [SectionMetadata] = [
+          getSectionMetadata(schoolId, "School"),
+          getSectionMetadata(schoolId, "OutstandingAmount"),
+          getSectionMetadata(schoolId, "PackingStatus"),
+          getSectionMetadata(schoolId, "PackingCount"),
+          getSectionMetadata(schoolId, "TrainingVisit"),
+          getSectionMetadata(schoolId, "AcademicQuery"),
+        ];
+
+        let lastActionByModule = getLastActionByModule(schoolId);
+
+        ?{
+          school;
+          outstandingAmount = outstanding;
+          packingStatus;
+          packingCounts = filteredPackingCounts;
+          trainingVisits = filteredTraining;
+          academicQueries = filteredAcademic;
+          sectionMetadata;
+          lastActionByModule;
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getAcademicQueriesBySchoolWithMetadata(schoolId : Text) : async [AcademicQueryExtended] {
+    requireAdmin(caller);
+
+    let filtered = academicQueries.values().filter(
+      func(q) { q.schoolId == schoolId }
+    );
+
+    let extended = filtered.map(
+      func(q) {
+        {
+          q with
+          lastUpdatedByName = getLastUpdatedName(q.id, "AcademicQuery");
+        };
+      }
+    );
+
+    extended.toArray();
+  };
+
+  func getLastUpdatedName(entityId : Text, entityType : Text) : Text {
+    let logs = auditLogs.values().toArray();
+
+    switch (logs.find(
+      func(log) { log.entityId == entityId and log.entityType == entityType }
+    )) {
+      case (null) { "Unknown" };
+      case (?log) { getUserName(log.initiator) };
+    };
+  };
+
+  func getLastEntityUpdateForSection(schoolId : Text, section : Text) : ?AuditLog {
+    let logs = auditLogs.values().toArray();
+
+    let matchingLogs = logs.filter(
+      func(log) {
+        log.entityId == schoolId and log.entityType == section;
+      }
+    );
+
+    if (matchingLogs.size() == 0) { null } else {
+      ?matchingLogs[0];
+    };
   };
 
   // ============================================================================
@@ -834,6 +1036,49 @@ actor {
     );
 
     id;
+  };
+
+  // Added new updateTrainingVisit operation
+  public shared ({ caller }) func updateTrainingVisit(
+    id : Text,
+    schoolId : Text,
+    visitDate : Int,
+    reason : Text,
+    visitingPerson : Text,
+    contactPersonMobile : Text,
+    observations : Text,
+    classroomObservationProof : ?Storage.ExternalBlob,
+  ) : async () {
+    requireRole(caller, #training);
+
+    if (not schools.containsKey(schoolId)) {
+      Runtime.trap("School not found");
+    };
+
+    switch (trainingVisits.get(id)) {
+      case (null) { Runtime.trap("Training visit record not found") };
+      case (?existing) {
+        let updatedVisit : TrainingVisit = {
+          existing with
+          schoolId;
+          visitDate;
+          reason;
+          visitingPerson;
+          contactPersonMobile;
+          observations;
+          classroomObservationProof;
+        };
+        trainingVisits.add(id, updatedVisit);
+
+        logAudit(
+          caller,
+          "UPDATE_TRAINING_VISIT",
+          "TrainingVisit",
+          id,
+          "Updated training visit for school " # schoolId # " by " # visitingPerson
+        );
+      };
+    };
   };
 
   public query ({ caller }) func getTrainingVisit(id : Text) : async TrainingVisit {

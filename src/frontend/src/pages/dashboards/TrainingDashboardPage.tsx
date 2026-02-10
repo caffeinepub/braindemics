@@ -1,6 +1,6 @@
 import { useListAllSchools, useListAllAcademicQueries } from '../../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, MessageSquare } from 'lucide-react';
+import { GraduationCap, MessageSquare, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolSearchPanel from '../../components/schools/SchoolSearchPanel';
 
@@ -9,6 +9,7 @@ export default function TrainingDashboardPage() {
   const { data: queries, isLoading: queriesLoading } = useListAllAcademicQueries();
 
   const openQueries = queries?.filter((q) => q.status === 'open').length || 0;
+  const solvedQueries = queries?.filter((q) => q.status === 'resolved').length || 0;
 
   return (
     <div className="space-y-6">
@@ -18,7 +19,7 @@ export default function TrainingDashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
@@ -43,6 +44,20 @@ export default function TrainingDashboardPage() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <div className="text-2xl font-bold">{openQueries}</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Solved Queries</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {queriesLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="text-2xl font-bold">{solvedQueries}</div>
             )}
           </CardContent>
         </Card>

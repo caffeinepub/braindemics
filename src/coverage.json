@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T10:27:57.663Z",
+  "generatedAt": "2026-02-10T12:38:49.297Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,28 +11,25 @@
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-36",
-        "summary": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
+        "id": "REQ-58",
+        "summary": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/demo/demoDataStore.ts",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/demo/DemoPreviewBanner.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/demo/demoDataStore.ts"
+          "frontend/src/components/demo/DemoPreviewBanner.tsx"
         ]
       },
       {
-        "id": "REQ-37",
-        "summary": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
+        "id": "REQ-59",
+        "summary": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/getErrorMessage.ts",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
+          "frontend/src/pages/training/SchoolTrainingPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/getErrorMessage.ts",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
+          "frontend/src/pages/training/SchoolTrainingPage.tsx"
         ]
       }
     ]
@@ -42,9 +39,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/demo/demoDataStore.ts",
-    "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-    "frontend/src/utils/getErrorMessage.ts",
+    "frontend/src/components/demo/DemoPreviewBanner.tsx",
+    "frontend/src/pages/training/SchoolTrainingPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

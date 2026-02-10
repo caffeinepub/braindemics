@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Prevent BigInt JSON serialization errors during school registration and ensure demo-mode School records persist safely in localStorage.
+**Goal:** Ensure the Demo/Preview Mode role switcher dropdown and the Training Visit create/edit form container use solid white backgrounds in light mode, while keeping existing dark-mode styling intact.
 
 **Planned changes:**
-- Update Demo/Preview Mode localStorage persistence for School records to store bigint fields in a JSON-compatible format (e.g., strings) and convert them back to bigint when reading.
-- Make loading/parsing of existing demo schools from localStorage backward-tolerant (handle previously stored numbers/strings without crashing).
-- Adjust school registration error handling to avoid JSON-serializing raw objects that may contain bigint values, and display a clear English error message on failure.
+- Update the Demo/Preview Mode role switcher SelectTrigger and opened dropdown surface to render with a solid white background in light mode only (no transparency), without changing role-switching behavior.
+- Update the Training Visits Log Visit and Edit Training Visit dialog form container to render with a solid white background in light mode only (no transparency), preserving existing dark-mode tokens and behavior.
+- Limit styling changes to the relevant pages/components and avoid modifying immutable UI component files or introducing global background changes.
 
-**User-visible outcome:** In Demo/Preview Mode, users can register a new school without runtime errors, see saved schools persist across reloads, and get clear, stable error messages if registration fails.
+**User-visible outcome:** In light mode, the Demo/Preview role switcher and Training Visit form dialogs appear on solid white surfaces for improved readability, while dark mode continues to look and behave as before.

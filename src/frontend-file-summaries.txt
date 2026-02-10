@@ -11,11 +11,12 @@
   "frontend/src/pages/LoginPage.tsx": "Login page with isolated error handling for Demo/Preview Mode vs Internet Identity authentication, tracking active login method to show only relevant error messages for the attempted sign-in method, using the correct isLoginError helper property from useInternetIdentity hook.",
   "frontend/src/demo/demoProfile.ts": "Synthetic UserProfile factory for Demo/Preview Mode that creates fake profiles based on selected role using StaffRole enum values.",
   "frontend/src/demo/demoSession.ts": "Demo/Preview Mode session management with hardened localStorage persistence, validation, and role presence checks to prevent corrupted session data from causing route redirects.",
-  "frontend/src/demo/demoDataStore.ts": "Demo/Preview Mode local data persistence layer using localStorage for schools, outstanding amounts, packing status, and packing counts with proper bigint serialization.",
+  "frontend/src/demo/demoDataStore.ts": "Demo/Preview Mode local data persistence layer using localStorage for schools, outstanding amounts, packing status, and packing counts with proper bigint-to-string serialization and backward-tolerant parsing to prevent JSON.stringify BigInt errors.",
   "frontend/src/pages/packing/packingOptions.ts": "Shared constants for Packing class options (Beginner, Explorer, Master) and theme options (MYSELF, SHAPES, ANIMAL KINGDOM, PLANT TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS).",
   "frontend/src/pages/packing/PackingSchoolsPage.tsx": "Packing school selection page with searchable school list that navigates to the per-school packing editor when a school is selected.",
   "frontend/src/pages/admin/OutstandingAmountPage.tsx": "Admin-only page for searching/selecting schools and setting outstanding amounts with read-only school details display and amount input field.",
   "frontend/src/pages/dashboards/AdminDashboardPage.tsx": "Admin dashboard with navigation buttons to Outstanding Amount management and School Registration, plus system overview cards and recent activity log.",
-  "frontend/src/pages/marketing/SchoolCreatePage.tsx": "School registration form reusable by both Marketing and Admin roles with role-aware navigation after successful creation.",
-  "frontend/src/pages/dashboards/PackingDashboardPage.tsx": "Packing dashboard with quick action button to navigate to school search/selection page."
+  "frontend/src/pages/marketing/SchoolCreatePage.tsx": "School registration form reusable by both Marketing and Admin roles with role-aware navigation after successful creation and safe error handling using getErrorMessage utility.",
+  "frontend/src/pages/dashboards/PackingDashboardPage.tsx": "Packing dashboard with quick action button to navigate to school search/selection page.",
+  "frontend/src/utils/getErrorMessage.ts": "Safe error message extraction utility that converts unknown error values to user-friendly English messages without using JSON.stringify, preventing BigInt serialization errors."
 }

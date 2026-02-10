@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-packing-module-ui-to-support-searching-and-selecting-a-school-instead-of-relying-only-on-a-pre-selected-route-param-then-show-the-selected-school-s-details-as-read-only-and-allow-updating-packing-status-for-that-selected-school",
-      "featureTitle": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
+      "featureId": "feature-fix-demo-preview-mode-localstorage-persistence-for-school-records-so-registering-a-school-does-not-throw-do-not-know-how-to-serialize-a-bigint-when-saving-to-localstorage",
+      "featureTitle": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
       "files": [
-        "frontend/src/pages/packing/PackingSchoolsPage.tsx",
-        "frontend/src/pages/packing/SchoolPackingPage.tsx",
-        "frontend/src/routeTree.tsx"
+        "frontend/src/demo/demoDataStore.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,106 +17,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-29"
+        "REQ-36"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-extend-packing-status-editing-to-include-two-dropdowns-for-class-and-theme-with-the-exact-option-sets-requested-and-ensure-the-selected-values-are-saved-and-reloaded-for-each-school",
-      "featureTitle": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
+      "featureId": "feature-ensure-user-facing-error-handling-for-school-registration-never-attempts-to-json-serialize-raw-objects-containing-bigint-values-show-a-clear-english-error-message-when-school-registration-fails",
+      "featureTitle": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/packing/SchoolPackingPage.tsx",
-        "frontend/src/pages/packing/packingOptions.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-30"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-counts-section-on-the-packing-page-for-the-selected-school-that-allows-entering-and-saving-counts-associated-with-the-selected-class-and-theme-and-ensure-these-values-are-persisted-and-reloaded",
-      "featureTitle": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/packing/SchoolPackingPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-31"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-an-admin-workflow-to-search-and-select-a-school-and-set-update-an-outstanding-amount-for-the-selected-school-selected-school-details-must-be-displayed-read-only-alongside-the-outstanding-field",
-      "featureTitle": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/admin/OutstandingAmountPage.tsx",
-        "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-        "frontend/src/routeTree.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-32"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-expose-the-school-s-outstanding-amount-in-the-marketing-module-when-viewing-selecting-any-school-so-marketing-can-see-the-outstanding-value-set-by-admin-and-or-accounts",
-      "featureTitle": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/schools/SchoolDetailsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-33"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-make-core-flows-work-end-to-end-in-demo-preview-mode-without-backend-access-school-registration-school-reflection-across-pages-outstanding-updates-and-packing-edits-must-all-function-using-demo-local-persisted-data",
-      "featureTitle": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
-      "files": [
-        "frontend/src/demo/demoDataStore.ts",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/admin/OutstandingAmountPage.tsx",
         "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-        "frontend/src/pages/packing/SchoolPackingPage.tsx"
+        "frontend/src/utils/getErrorMessage.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -130,29 +38,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-34"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-allow-admin-to-register-schools-create-school-in-non-demo-mode-and-ensure-newly-created-schools-appear-immediately-across-modules-wherever-school-search-listing-is-used",
-      "featureTitle": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
-      "files": [
-        "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-        "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-        "frontend/src/routeTree.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-35"
+        "REQ-37"
       ],
       "confidence": "high"
     }

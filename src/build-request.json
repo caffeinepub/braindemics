@@ -1,155 +1,67 @@
 {
   "kind": "build_request",
-  "title": "Add school search + class/theme packing updates, outstanding amount management, and fully working Demo/Preview mode flows",
+  "title": "Fix BigInt serialization error during school registration",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-29",
-      "text": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
+      "id": "REQ-36",
+      "text": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "in packing page add - status update of school, search school- ... that selected school name and details should visible non editable"
+          "if i register school i got this error (Do not know how to serialize a BigInt)"
         ]
       },
       "acceptanceCriteria": [
-        "Packing page provides a school search/select control (searchable list) and selecting a school navigates/loads the packing editor for that school.",
-        "Selected school details (name, address, city/state, contact info, student count) are visible and non-editable on the Packing page.",
-        "If no school is selected, the Packing page shows a clear empty state prompting the user to search and select a school.",
-        "All user-facing labels/messages are in English."
+        "In Demo/Preview Mode, submitting the Register New School form successfully creates the school without any runtime errors.",
+        "Schools saved in Demo/Preview Mode are persisted across reloads (localStorage) and can be listed/selected on pages that use the school list.",
+        "All bigint fields in a School object (e.g., studentCount, createdTimestamp, lastUpdateTimestamp) are stored in localStorage in a JSON-compatible way (e.g., as strings) and converted back to bigint when reading.",
+        "Existing demo schools already stored in localStorage (if any) do not cause the app to crash; parsing should be backward-tolerant (e.g., handle numbers/strings and convert to bigint)."
       ]
     },
     {
-      "id": "REQ-30",
-      "text": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "in status option two drop down- one for class and second dropdown for theme, in class drop down add (Beginner, Explorer, Master), in Theme Dropdown (MYSELF,SHAPES, ANIMAL KINGDOM, PLANT  TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Packing page shows a Class dropdown with options exactly: Beginner, Explorer, Master.",
-        "Packing page shows a Theme dropdown with options exactly: MYSELF, SHAPES, ANIMAL KINGDOM, PLANT TREES AND FLOWERS, FRUITS AND VEGETABLES, FIVE ELEMENTS.",
-        "Saving packing status persists class + theme for the school and they are correctly displayed when revisiting the same school.",
-        "Backend enforces that only Packing role (or Admin) can update packing status, consistent with existing RBAC behavior."
-      ]
-    },
-    {
-      "id": "REQ-31",
-      "text": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "and add counts adding section for that school selected class and theme."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Packing page includes a dedicated counts section that is clearly labeled in English.",
-        "Counts are editable inputs and are saved together with the packing status update for the school.",
-        "After saving, a refresh/re-open of the page shows the same saved counts for that school along with the saved class/theme selections.",
-        "Validation prevents negative values and displays a clear English error message when invalid input is provided."
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "text": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "in Admin page Add search school and select school - fill outstanding for that selected school. and that school details should show there non editable."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Admin area provides a school search/select UI and a view for the selected school that shows school details read-only.",
-        "Admin can input and save an Outstanding Amount for the selected school.",
-        "Outstanding Amount is persisted in backend state and reloaded correctly for the selected school.",
-        "Non-admin users cannot access the admin outstanding editor (route guarded in frontend, and backend rejects unauthorized updates).",
-        "All user-facing labels/messages are in English (e.g., “Outstanding Amount (₹)”)."
-      ]
-    },
-    {
-      "id": "REQ-33",
-      "text": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "this out standing will show to marketing page if they select any school they can see the outstanding too"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Marketing users can see a read-only Outstanding Amount value for a selected school (wherever school details are shown in the Marketing module).",
-        "If no outstanding is set yet for a school, the UI shows 0 or an explicit English “Not set” state (choose one and apply consistently).",
-        "Outstanding Amount displayed in Marketing matches the value saved from the Admin workflow."
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "text": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
+      "id": "REQ-37",
+      "text": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "and make all sections in working condition in all page, i should register school from Marketing page, admin page. that schools will reflect wherever it should show, acounts page should update outstanding for school. packing should add count and editable all option",
-          "make everything working condition in demo mode"
+          "if i register school i got this error (Do not know how to serialize a BigInt)"
         ]
       },
       "acceptanceCriteria": [
-        "In Demo/Preview Mode, creating a school from the Marketing school registration page adds the school to the demo school list and it becomes searchable/visible across dashboards and modules without reload issues.",
-        "In Demo/Preview Mode, Admin can set Outstanding Amount for a school and Marketing can see the same value for that school.",
-        "In Demo/Preview Mode, Packing edits (class/theme + counts + packing flags/dispatch details) can be saved and then reloaded, and the demo data persists across navigation (and optionally across browser refresh via localStorage).",
-        "Demo/Preview Mode does not hard-crash on any of these pages; failures show clear English messages only when truly necessary.",
-        "Demo-mode data behavior is consistent across: school list queries, school detail queries, packing status queries, and outstanding queries."
-      ]
-    },
-    {
-      "id": "REQ-35",
-      "text": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "i should register school from Marketing page, admin page. that schools will reflect wherever it should show"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend allows Admin role to create schools (in addition to existing Marketing capability) while keeping other roles blocked.",
-        "Frontend provides an Admin-accessible entry point to create/register a school (reusing the existing school registration form behavior and validation), and the new school appears in school searches/lists after creation.",
-        "RBAC remains enforced: non-admin, non-marketing users cannot create schools (backend rejects, frontend hides/blocks)."
+        "If school registration fails (demo or non-demo), the UI shows an English toast message that does not include \"Do not know how to serialize a BigInt\".",
+        "The Register New School page remains usable after a failure (no blank screen, no unhandled promise rejection).",
+        "If an error message is displayed from an exception, it is extracted safely as a string (without JSON.stringify on unknown objects)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; add backend/migration.mo only if state/schema changes require it.",
-    "Do not edit files under frontend/src/components/ui or any other frontend immutable paths listed in SYSTEM_CONTEXT.",
-    "Use English for all user-facing UI text and error messages."
+    "Do not edit files under frontend/src/components/ui (shadcn components are read-only and must be composed).",
+    "Do not modify immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add migration code if a state schema upgrade is required (this change should be frontend-only)."
   ],
   "nonGoals": [
-    "Do not add third-party authentication providers; only Internet Identity and existing Demo/Preview Mode remain supported.",
-    "Do not add external databases or off-chain storage; demo data must be frontend-local only.",
-    "Do not implement real-time syncing or websockets."
+    "Changing the backend School type (studentCount as Nat) or backend school creation logic.",
+    "Adding new demo features beyond fixing demo school persistence and error handling for registration."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

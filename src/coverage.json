@@ -1,150 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T10:17:59.499Z",
+  "generatedAt": "2026-02-10T10:27:57.663Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 7,
-    "implemented": 7,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-29",
-        "summary": "Update the Packing module UI to support searching and selecting a school (instead of relying only on a pre-selected route param), then show the selected school’s details as read-only and allow updating packing status for that selected school.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/packing/PackingSchoolsPage.tsx",
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/components/schools/SchoolSearchPanel.tsx",
-          "frontend/src/routeTree.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/packing/PackingSchoolsPage.tsx",
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/routeTree.tsx"
-        ]
-      },
-      {
-        "id": "REQ-30",
-        "summary": "Extend Packing status editing to include two dropdowns for Class and Theme with the exact option sets requested, and ensure the selected values are saved and reloaded for each school.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/pages/packing/packingOptions.ts",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/pages/packing/packingOptions.ts",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-31",
-        "summary": "Add a “counts” section on the Packing page for the selected school that allows entering and saving counts associated with the selected Class and Theme, and ensure these values are persisted and reloaded.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-32",
-        "summary": "Add an Admin workflow to search and select a school and set/update an Outstanding Amount for the selected school; selected school details must be displayed read-only alongside the outstanding field.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/schools/SchoolSearchPanel.tsx",
-          "frontend/src/routeTree.tsx",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/routeTree.tsx",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-33",
-        "summary": "Expose the school’s Outstanding Amount in the Marketing module when viewing/selecting any school, so Marketing can see the outstanding value set by Admin (and/or Accounts).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-34",
-        "summary": "Make core flows work end-to-end in Demo/Preview Mode (without backend access): school registration, school reflection across pages, outstanding updates, and packing edits must all function using demo-local persisted data.",
+        "id": "REQ-36",
+        "summary": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/demo/demoDataStore.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/pages/admin/OutstandingAmountPage.tsx",
-          "frontend/src/components/schools/SchoolSearchPanel.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/demo/demoDataStore.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "frontend/src/pages/packing/SchoolPackingPage.tsx",
-          "frontend/src/pages/admin/OutstandingAmountPage.tsx"
+          "frontend/src/demo/demoDataStore.ts"
         ]
       },
       {
-        "id": "REQ-35",
-        "summary": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
+        "id": "REQ-37",
+        "summary": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/routeTree.tsx",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "frontend/src/utils/getErrorMessage.ts",
           "frontend/src/pages/marketing/SchoolCreatePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/routeTree.tsx",
-          "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "frontend/src/utils/getErrorMessage.ts",
           "frontend/src/pages/marketing/SchoolCreatePage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
     "frontend/src/demo/demoDataStore.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
-    "frontend/src/pages/admin/OutstandingAmountPage.tsx",
-    "frontend/src/pages/admin/StaffManagementPage.tsx",
-    "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
-    "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
     "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-    "frontend/src/pages/packing/PackingSchoolsPage.tsx",
-    "frontend/src/pages/packing/SchoolPackingPage.tsx",
-    "frontend/src/pages/packing/packingOptions.ts",
-    "frontend/src/pages/schools/SchoolDetailsPage.tsx",
-    "frontend/src/routeTree.tsx",
+    "frontend/src/utils/getErrorMessage.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

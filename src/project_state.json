@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 15,
   "summary": "Role-based internal web application for Braindemics to manage shared School records across departments with strict RBAC, dashboards, form-based workflows, PDF uploads, search/filtering, and full audit logging; additionally, support a test/preview mode with dummy login to access screens without Internet Identity.",
   "architectural_notes": [
     "Single shared School ID is the primary key linking all department modules (payments, packing, training visits, academic queries).",
@@ -17,7 +17,8 @@
   "known_issues": [
     "Login blocked with message \"Access not configured. Please contact your administrator to set up your staff profile.\" persists even after attempted setup; indicates staff profile ↔ Internet Identity principal mapping not being created/loaded correctly.",
     "Demo/Preview Mode login: entering dummy user ID/password does not route into the app/dashboard; user cannot access pages to explore the app.",
-    "Demo/Preview Mode: key module flows are not fully working end-to-end (school registration/reflection across pages, outstanding updates, packing edits), preventing full-page testing in demo mode."
+    "Demo/Preview Mode: key module flows are not fully working end-to-end (school registration/reflection across pages, outstanding updates, packing edits), preventing full-page testing in demo mode.",
+    "School registration fails with runtime error: \"Do not know how to serialize a BigInt\" (likely BigInt value being returned/JSON-serialized in API response)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -266,6 +267,22 @@
       "title": "Allow Admin to register schools (create school) in non-demo mode, and ensure newly created schools appear immediately across modules wherever school search/listing is used.",
       "reqIds": [
         "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-demo-preview-mode-localstorage-persistence-for-school-records-so-registering-a-school-does-not-throw-do-not-know-how-to-serialize-a-bigint-when-saving-to-localstorage",
+      "title": "Fix Demo/Preview Mode localStorage persistence for School records so registering a school does not throw \"Do not know how to serialize a BigInt\" when saving to localStorage.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-user-facing-error-handling-for-school-registration-never-attempts-to-json-serialize-raw-objects-containing-bigint-values-show-a-clear-english-error-message-when-school-registration-fails",
+      "title": "Ensure user-facing error handling for school registration never attempts to JSON-serialize raw objects containing bigint values; show a clear English error message when school registration fails.",
+      "reqIds": [
+        "REQ-37"
       ],
       "version": 1
     }

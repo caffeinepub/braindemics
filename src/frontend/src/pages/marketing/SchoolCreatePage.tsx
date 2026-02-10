@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffRole } from '../../backend';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 
 export default function SchoolCreatePage() {
   const navigate = useNavigate();
@@ -51,8 +52,9 @@ export default function SchoolCreatePage() {
       } else {
         navigate({ to: '/marketing/dashboard' });
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to register school');
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 

@@ -12,25 +12,80 @@ const DEMO_PACKING_COUNTS_KEY = 'braindemics_demo_packing_counts';
 // SCHOOLS
 // ============================================================================
 
+interface StoredSchool {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  contactPerson: string;
+  contactNumber: string;
+  email: string;
+  website?: string;
+  studentCount: string; // stored as string
+  createdTimestamp: string; // stored as string
+  lastUpdateTimestamp: string; // stored as string
+}
+
+function schoolToStored(school: School): StoredSchool {
+  return {
+    id: school.id,
+    name: school.name,
+    address: school.address,
+    city: school.city,
+    state: school.state,
+    contactPerson: school.contactPerson,
+    contactNumber: school.contactNumber,
+    email: school.email,
+    website: school.website,
+    studentCount: school.studentCount.toString(),
+    createdTimestamp: school.createdTimestamp.toString(),
+    lastUpdateTimestamp: school.lastUpdateTimestamp.toString(),
+  };
+}
+
+function storedToSchool(stored: StoredSchool): School {
+  return {
+    id: stored.id,
+    name: stored.name,
+    address: stored.address,
+    city: stored.city,
+    state: stored.state,
+    contactPerson: stored.contactPerson,
+    contactNumber: stored.contactNumber,
+    email: stored.email,
+    website: stored.website,
+    studentCount: BigInt(stored.studentCount || 0),
+    createdTimestamp: BigInt(stored.createdTimestamp || 0),
+    lastUpdateTimestamp: BigInt(stored.lastUpdateTimestamp || 0),
+  };
+}
+
 export function getDemoSchools(): School[] {
   try {
     const stored = localStorage.getItem(DEMO_SCHOOLS_KEY);
     if (!stored) return [];
-    return JSON.parse(stored);
+    const storedSchools: StoredSchool[] = JSON.parse(stored);
+    return storedSchools.map(storedToSchool);
   } catch {
     return [];
   }
 }
 
 export function saveDemoSchool(school: School): void {
-  const schools = getDemoSchools();
-  const index = schools.findIndex(s => s.id === school.id);
-  if (index >= 0) {
-    schools[index] = school;
-  } else {
-    schools.push(school);
+  try {
+    const schools = getDemoSchools();
+    const index = schools.findIndex(s => s.id === school.id);
+    if (index >= 0) {
+      schools[index] = school;
+    } else {
+      schools.push(school);
+    }
+    const storedSchools = schools.map(schoolToStored);
+    localStorage.setItem(DEMO_SCHOOLS_KEY, JSON.stringify(storedSchools));
+  } catch {
+    // Ignore errors
   }
-  localStorage.setItem(DEMO_SCHOOLS_KEY, JSON.stringify(schools));
 }
 
 export function getDemoSchool(id: string): School | null {

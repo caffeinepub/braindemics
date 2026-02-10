@@ -1,0 +1,11 @@
+{
+  "frontend/src/routeTree.tsx": "Defines all application routes with TanStack Router, including authentication guards, role-based redirects, and proper route hierarchy with authenticated parent routes. Includes RouterContext interface for proper TypeScript typing.",
+  "frontend/src/pages/accounts/SchoolPaymentsPage.tsx": "Accounts module page for managing school payments with create/update forms, payment status tracking, and PDF proof upload/download functionality.",
+  "frontend/src/pages/packing/SchoolPackingPage.tsx": "Packing module page for managing school packing status including kit counts, dispatch status, current theme, and dispatch details.",
+  "frontend/src/pages/schools/SchoolDetailsPage.tsx": "Shared school details page showing core school information with edit capabilities restricted to Marketing and Admin roles.",
+  "frontend/src/pages/training/SchoolTrainingPage.tsx": "Training module page for logging training visits with PDF uploads and raising academic queries linked to schools.",
+  "frontend/src/pages/admin/AuditLogPage.tsx": "Admin-only audit log viewer with filtering by search term and entity type, displaying all system activities in a sortable table.",
+  "frontend/src/hooks/useQueries.ts": "Centralized React Query hooks for all backend operations including schools, staff, payments, packing, training visits, academic queries, and audit logs with proper cache invalidation.",
+  "frontend/src/pages/admin/StaffManagementPage.tsx": "Admin-only staff management page with create/update forms for staff profiles using StaffRole enum values, role assignment, and a table displaying all staff members with their details.",
+  "frontend/src/index.css": "Global CSS file with Tailwind directives and OKLCH-based design tokens for light and dark themes with emerald/teal color scheme for the Braindemics application."
+}

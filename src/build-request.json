@@ -1,0 +1,299 @@
+{
+  "kind": "build_request",
+  "title": "Braindemics internal role-based school operations app (RBAC, shared School ID, dashboards, PDFs, audit logs)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Implement secure authentication using Internet Identity and a common login page that signs the user in and then redirects them to the correct role dashboard based on their staff role.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Users log in through a common login page. The system detects the user role and redirects them to their respective dashboard.",
+          "Secure authentication"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Unauthenticated users are always routed to the login page.",
+        "After Internet Identity sign-in, the app resolves the signed-in principal to exactly one of: Admin, Accounts, Packing, Marketing, Training, Academic.",
+        "After role resolution, the user is redirected to the correct role dashboard route.",
+        "If a principal is not registered as staff, the UI shows an English error state explaining access is not configured (and does not expose app data)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Create the core backend data models and persistence for: School, Staff, Payment, Packing Status, Training Visit, Academic Query, and Audit Log entries; ensure all department operations reference a single shared School ID and records are time-stamped.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Core Data Models",
+          "All departments work on the same school data using a single shared School ID",
+          "All actions should be time-stamped and logged."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes typed CRUD/query methods needed by the UI for each entity.",
+        "Each School has a unique ID used as the foreign key in Payment, Packing Status, Training Visit, and Academic Query records.",
+        "Created/updated timestamps are recorded on all mutable entities and audit log entries include timestamp + actor identity.",
+        "Data remains available after canister upgrade (use stable storage patterns in the single main actor)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Enforce strict role-based access control (RBAC) in the backend for every mutation and sensitive read according to the six roles; the frontend must also guard routes and disable/hide unauthorized actions, but backend enforcement is the source of truth.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Role-based access control must be enforced strictly.",
+          "Only Marketing can create schools.",
+          "School core details are view-only for non-Marketing roles.",
+          "Admin has full visibility, not restricted editing."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Non-Marketing principals cannot create School records via any backend method.",
+        "Non-Marketing roles cannot edit School core fields (name, location, contact person, mobile, status); they may only edit fields explicitly allowed for their module (e.g., Accounts payment fields, Packing counts/status, Training visits/queries).",
+        "Admin can perform all actions across all modules.",
+        "Attempting an unauthorized backend call returns a clear error (not silent failure) and no data is changed.",
+        "Frontend routes for each module are inaccessible without the correct role (e.g., direct URL navigation is blocked)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Implement Staff management and role assignment so that Admin can create/update staff records and associate an Internet Identity principal with a staff profile (name, role, department, contact details); use this mapping to resolve roles after login.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Staff (name, role, department, contact details, login credentials)",
+          "Admin – Full access to all modules, staff management, global dashboards, reports, and insights."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin UI allows creating a staff profile and setting role/department/contact details.",
+        "A staff profile can be linked to the currently signed-in principal or an entered principal identifier (as supported by the platform).",
+        "On login, role resolution uses the backend staff mapping for the signed-in principal.",
+        "Non-admin users cannot access staff management screens or staff mutation APIs."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Build role-specific dashboards (Admin, Accounts, Packing, Marketing, Training, Academic) with summary cards, relevant tables, and notifications derived from the shared school data and each department’s workflow state.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Each role should have a dashboard with summary cards, tables, and notifications.",
+          "Admin can view all activities and insights across departments."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each role has a dedicated dashboard route and layout.",
+        "Dashboards display summary cards and at least one table/list relevant to the role (e.g., pending payments for Accounts; pending dispatch for Packing; upcoming/overdue visits for Training; open academic queries for Academic).",
+        "Admin dashboard includes cross-department summaries and an activity feed sourced from audit logs.",
+        "All user-facing text is in English.",
+        "Dashboards load data via React Query and show clear loading/empty/error states."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Implement Marketing module pages to register new schools and edit school details, including student count updates; ensure created schools become visible to other roles immediately via the shared School ID.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Marketing – Can register new schools, edit school details, update student count, and view theme and payment status.",
+          "Marketing creates the school record. The same school record becomes visible to Accounts, Packing, and Training."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Marketing can create a school with required fields and receives a generated School ID.",
+        "Marketing can edit school core details and student count.",
+        "Accounts/Packing/Training users can search for and open the same school by School ID and view the school core details (read-only).",
+        "Non-Marketing roles do not see UI controls for editing school core fields."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Implement Accounts module to view school details and manage payments: update outstanding payments, payment status, due dates/amounts as needed, and upload/download payment proof PDFs; prevent Accounts from editing school core details.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Accounts – Can view school details and update outstanding payments, payment status, and upload payment proof PDFs. Cannot edit school core details.",
+          "PDF upload should be enabled only where required."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Accounts can list/search schools and open a school payment view.",
+        "Accounts can create/update payment records for a school (amount, due date, status).",
+        "Accounts can upload a payment proof PDF and later download/view it.",
+        "Accounts cannot modify school core fields via UI or backend (RBAC enforced)."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Implement Packing module to view school details and update packing status: student kit count, add-on count, packing/dispatch status and dispatch details, and current curriculum theme; ensure updates are visible to other departments.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Packing – Can view school details and update student kit count, add-on count, packing status, dispatch details, and current curriculum theme.",
+          "Packing updates theme progress."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Packing can list/search schools and open a packing status view per school.",
+        "Packing can update kit count, add-ons, packing/dispatch status, dispatch details, and theme fields permitted for Packing.",
+        "Other roles can view the current theme and packing status where relevant (e.g., Marketing can view theme and payment status; Admin can view all).",
+        "All packing changes create corresponding audit log entries with actor and timestamp."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Implement Training module to log training visits and raise academic queries: record visit date, reason, visiting person, contact person mobile number, observations, upload/download classroom observation PDFs, and create academic queries linked to the school.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Training – Can log school visits, record visit reason, visiting person, contact person mobile number, upload classroom observation PDFs, and raise academic queries.",
+          "Training raises academic queries."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Training can create and view training visit entries per school with validated required fields.",
+        "Training can upload a classroom observation PDF to a visit and download/view it later.",
+        "Training can raise an academic query linked to a school (type, description, initial status).",
+        "Training cannot edit school core details (RBAC enforced)."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "Implement Academic module to view academic queries raised by trainers, respond to them, and update query status; ensure query lifecycle and responses are fully auditable.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Academic – Can view academic queries raised by trainers, respond to them, and update query status.",
+          "Academic resolves queries."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Academic can see a list of queries with filtering by status, school, and type.",
+        "Academic can add a response and update query status.",
+        "Training can see updates to the queries they raised (read-only for response fields unless specified otherwise).",
+        "All query updates create audit log entries with actor, timestamp, old value(s), and new value(s) as appropriate."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Add global tables with filtering and search for key lists (schools, payments, packing statuses, training visits, academic queries) and ensure all data entry is form-based with validation and clear English error handling.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Tables should support filtering and search.",
+          "All data entry should be form-based with validation.",
+          "Clear error handling and validation"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each major list view includes a search input and at least one filter relevant to the entity (e.g., status).",
+        "Forms validate required fields and show inline English validation messages.",
+        "Backend errors are surfaced in the UI in a safe, readable manner.",
+        "List views display empty states when no results match filters."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Implement a comprehensive audit logging system for all create/update actions across modules (schools, staff, payments, packing, visits, queries) and provide an Admin-facing activity/audit log viewer with filtering by actor, entity type, school ID, and date range.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Audit logs for all updates",
+          "All actions should be time-stamped and logged.",
+          "Admin can view all activities and insights across departments."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Every mutation endpoint writes an audit log entry including: actor (principal), role (at time of action if available), entity type, entity ID (including School ID), action type, timestamp, and a summary of changed fields.",
+        "Admin can view an audit log page with pagination and filtering controls.",
+        "Non-admin users cannot access the audit log viewer (except potentially their own actions if explicitly added later; not required now)."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Deliver a clean, simple, functional, responsive (desktop-first) UI with a coherent visual theme applied consistently across dashboards, forms, and tables.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Clean, simple, and functional UI is preferred over visual complexity.",
+          "Responsive desktop-first design"
+        ]
+      },
+      "acceptanceCriteria": [
+        "UI uses a consistent spacing/typography/color system across screens.",
+        "Layouts work well on common desktop widths and remain usable on smaller screens without horizontal scrolling for primary workflows.",
+        "No blue/purple-dominant theme is used by default."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
+    "Use Internet Identity for authentication (no third-party auth providers).",
+    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui; compose/wrap these components and hooks instead.",
+    "PDF upload/download must be enabled only for payment proof PDFs and classroom observation PDFs (no other modules get uploads unless explicitly added later).",
+    "Use English for all user-facing text."
+  ],
+  "nonGoals": [
+    "External databases or third-party storage for PDFs (store within the Internet Computer canister constraints).",
+    "WebSockets/real-time chat/notifications; notifications are dashboard indicators based on queried data.",
+    "Public-facing school portal; this is internal employees only.",
+    "Non-Internet-Identity authentication methods (email/password, OAuth, Auth0, etc.)."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

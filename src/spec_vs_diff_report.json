@@ -1,0 +1,164 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-10T07:26:19.829Z",
+  "summary": "The diff adds a new Motoko backend actor with core entity types (School, StaffProfile, Payment, PackingStatus, TrainingVisit, AcademicQuery, AuditLog) and a React frontend with role-based layouts, dashboards, staff management and audit log pages, school search, and accounts payment UI including PDF upload handling. However, several BuildRequest requirements are not evidenced in the provided diff (notably login/route-guard flows, marketing school create/edit, packing/training detail flows, comprehensive audit filtering/pagination, and backend stable persistence + RBAC details). The diff also introduces an unrequested secret-token access-control initialization pathway and Caffeine branding/emoji in the footer.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Common login page that routes unauthenticated users to login, resolves principal to exactly one staff role, redirects to the correct role dashboard, and shows an English 'not configured' error for unregistered principals without exposing data.",
+      "reason": "No login page, unauthenticated routing, role-resolution redirect logic, or explicit 'not registered as staff' error state is shown in the diff summary. AppLayout returns null when identity/profile missing, but that is not equivalent to routing to login or showing an error state.",
+      "evidence": [
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Backend persistence with stable storage across upgrades for School, Staff, Payment, Packing Status, Training Visit, Academic Query, and Audit Log; typed CRUD/query methods for each; timestamps on mutable entities; audit logs include actor identity.",
+      "reason": "Entity types and in-memory Maps are shown, but the backend file is truncated and does not evidence stable storage patterns (stable vars / preupgrade/postupgrade) nor the full set of CRUD/query methods for each entity.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Strict RBAC enforced in backend for every mutation and sensitive read; unauthorized calls return clear errors; frontend route guarding to block direct URL access.",
+      "reason": "Backend RBAC enforcement logic and error returns are not shown due to truncation; frontend route protection is not evidenced (only role-based nav rendering is shown).",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/layout/RoleNav.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Staff management must allow Admin to link a staff profile to the currently signed-in principal or an entered principal; non-admins cannot access staff screens or staff mutation APIs; login role resolution uses staff mapping.",
+      "reason": "StaffManagementPage supports entered principal, but there is no evidence of 'link to currently signed-in principal' UI, no evidence of frontend route restriction to admin-only, and no evidence that login role resolution/redirect uses the staff mapping.",
+      "evidence": [
+        "frontend/src/pages/admin/StaffManagementPage.tsx",
+        "frontend/src/components/layout/RoleNav.tsx"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Marketing module pages to register new schools and edit school details (including student count); generated School ID; non-marketing cannot edit school core fields.",
+      "reason": "Marketing dashboard links to '/marketing/schools/create', but no school create/edit page implementation is shown in the diff summary.",
+      "evidence": [
+        "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
+        "frontend/src/components/layout/RoleNav.tsx"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Accounts can upload AND download/view payment proof PDFs; Accounts cannot modify school core fields via UI or backend.",
+      "reason": "Accounts payments page shows upload handling and a download icon import, but the diff excerpt only evidences PDF upload validation and mutation; no download/view flow is shown. RBAC preventing core school edits is not evidenced.",
+      "evidence": [
+        "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "Packing module school-specific view to update kit/add-on counts, packing/dispatch status + details, and theme; all packing changes create audit log entries.",
+      "reason": "Only the Packing dashboard is shown (with school search and counts). No packing status edit/view page or audit-log-on-change behavior is evidenced in the diff summary.",
+      "evidence": [
+        "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
+        "frontend/src/components/schools/SchoolSearchPanel.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "requirement": "Training module to log training visits with required fields, upload/download classroom observation PDFs per visit, and raise academic queries linked to a school.",
+      "reason": "Training dashboard and an academic queries count are shown, but no training visit create/view UI, no classroom observation PDF upload/download UI, and no 'raise academic query' UI is evidenced in the diff summary.",
+      "evidence": [
+        "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
+        "frontend/src/components/layout/RoleNav.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "requirement": "Academic module query list with filtering by status, school, and type; Academic can respond and update status; all updates are auditable with old/new values; Training can see updates to queries they raised (read-only response unless specified).",
+      "reason": "AcademicQueriesPage shows filtering by status only; there is no evidence of filtering by school and type. Full audit details (old/new values) and Training read-only view of responses are not evidenced.",
+      "evidence": [
+        "frontend/src/pages/academic/AcademicQueriesPage.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "requirement": "Global tables with filtering + search for key lists (schools, payments, packing statuses, training visits, academic queries) and form-based validated data entry with clear English error handling.",
+      "reason": "SchoolSearchPanel includes search but no explicit filters; Audit log has search and entity-type filter; Academic queries have status filter only. No evidence is shown for filters on payments/packing statuses/training visits lists, nor for required-field validation messages (beyond some toasts / PDF type check).",
+      "evidence": [
+        "frontend/src/components/schools/SchoolSearchPanel.tsx",
+        "frontend/src/pages/admin/AuditLogPage.tsx",
+        "frontend/src/pages/academic/AcademicQueriesPage.tsx",
+        "frontend/src/pages/accounts/SchoolPaymentsPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "requirement": "Comprehensive audit logging for all create/update actions with actor, role (if available), entity type/id, action type, timestamp, and changed-field summary; Admin audit viewer with pagination and filtering by actor, entity type, school ID, and date range; non-admin access blocked.",
+      "reason": "AuditLog type includes initiator/action/entityType/entityId/timestamp/details, but role-at-time and changed-field summary structure is not evidenced; viewer shows only search + entity type filter and no pagination/date-range/actor/school-ID filters are shown. Non-admin route restriction is not evidenced.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/admin/AuditLogPage.tsx",
+        "frontend/src/components/layout/RoleNav.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Secret-token-based access control initialization via URL parameter (caffeineAdminToken) and backend method _initializeAccessControlWithSecret.",
+      "reason": "BuildRequest requires Internet Identity authentication and does not specify any secret admin token bootstrap/override mechanism; this adds an additional authentication/authorization pathway not requested.",
+      "evidence": [
+        "frontend/src/hooks/useActor.ts"
+      ]
+    },
+    {
+      "description": "Caffeine.ai branded footer link and heart emoji in the application layout.",
+      "reason": "Not requested in the BuildRequest and may conflict with the requirement to keep user-facing text in English and the general scope (internal ops app) by adding external promotional branding/emoji.",
+      "evidence": [
+        "frontend/src/components/layout/AppLayout.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.66,
+  "changed_files": [
+    "all_files_summary.json",
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/index.css",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/layout/RoleNav.tsx",
+    "frontend/src/components/schools/SchoolSearchPanel.tsx",
+    "frontend/src/hooks/useActor.ts",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
+    "frontend/src/main.tsx",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/academic/AcademicQueriesPage.tsx",
+    "frontend/src/pages/accounts/SchoolPaymentsPage.tsx",
+    "frontend/src/pages/admin/AuditLogPage.tsx",
+    "frontend/src/pages/admin/StaffManagementPage.tsx",
+    "frontend/src/pages/dashboards/AcademicDashboardPage.tsx",
+    "frontend/src/pages/dashboards/AccountsDashboardPage.tsx",
+    "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+    "frontend/src/pages/dashboards/MarketingDashboardPage.tsx",
+    "frontend/src/pages/dashboards/PackingDashboardPage.tsx",
+    "frontend/src/pages/dashboards/TrainingDashboardPage.tsx",
+    "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+    "frontend/src/pages/packing/SchoolPackingPage.tsx",
+    "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+    "frontend/src/pages/training/SchoolTrainingPage.tsx",
+    "frontend/src/pages/training/TrainingQueriesPage.tsx",
+    "frontend/src/routeTree.tsx",
+    "frontend/src/utils/urlParams.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json"
+  ]
+}

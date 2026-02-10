@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Role-based internal web application for Braindemics to manage shared School records across departments (Marketing, Accounts, Packing, Training, Academic, Admin) with strict RBAC, dashboards, form-based workflows, PDF uploads, search/filtering, and full audit logging.",
+  "architectural_notes": [
+    "Single shared School ID is the primary key linking all department modules (payments, packing, training visits, academic queries).",
+    "Strict RBAC: Marketing-only create/edit school core details; other roles read-only for core school info; Admin has full access.",
+    "Role-based post-login routing to dashboards.",
+    "All mutating actions must be audit-logged with timestamp and user identity.",
+    "PDF uploads only for specified entities (payment proof, classroom observations).",
+    "Desktop-first responsive UI; clean functional design prioritized.",
+    "Tables should support filtering and search; forms must validate and show clear errors."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-implement-secure-authentication-using-internet-identity-and-a-common-login-page-that-signs-the-user-in-and-then-redirects-them-to-the-correct-role-dashboard-based-on-their-staff-role",
+      "title": "Implement secure authentication using Internet Identity and a common login page that signs the user in and then redirects them to the correct role dashboard based on their staff role.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-strict-role-based-access-control-rbac-in-the-backend-for-every-mutation-and-sensitive-read-according-to-the-six-roles-the-frontend-must-also-guard-routes-and-disable-hide-unauthorized-actions-but-backend-enforcement-is-the-source-of-truth",
+      "title": "Enforce strict role-based access control (RBAC) in the backend for every mutation and sensitive read according to the six roles; the frontend must also guard routes and disable/hide unauthorized actions, but backend enforcement is the source of truth.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-staff-management-and-role-assignment-so-that-admin-can-create-update-staff-records-and-associate-an-internet-identity-principal-with-a-staff-profile-name-role-department-contact-details-use-this-mapping-to-resolve-roles-after-login",
+      "title": "Implement Staff management and role assignment so that Admin can create/update staff records and associate an Internet Identity principal with a staff profile (name, role, department, contact details); use this mapping to resolve roles after login.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-role-specific-dashboards-admin-accounts-packing-marketing-training-academic-with-summary-cards-relevant-tables-and-notifications-derived-from-the-shared-school-data-and-each-department-s-workflow-state",
+      "title": "Build role-specific dashboards (Admin, Accounts, Packing, Marketing, Training, Academic) with summary cards, relevant tables, and notifications derived from the shared school data and each department’s workflow state.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-marketing-module-pages-to-register-new-schools-and-edit-school-details-including-student-count-updates-ensure-created-schools-become-visible-to-other-roles-immediately-via-the-shared-school-id",
+      "title": "Implement Marketing module pages to register new schools and edit school details, including student count updates; ensure created schools become visible to other roles immediately via the shared School ID.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-accounts-module-to-view-school-details-and-manage-payments-update-outstanding-payments-payment-status-due-dates-amounts-as-needed-and-upload-download-payment-proof-pdfs-prevent-accounts-from-editing-school-core-details",
+      "title": "Implement Accounts module to view school details and manage payments: update outstanding payments, payment status, due dates/amounts as needed, and upload/download payment proof PDFs; prevent Accounts from editing school core details.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-packing-module-to-view-school-details-and-update-packing-status-student-kit-count-add-on-count-packing-dispatch-status-and-dispatch-details-and-current-curriculum-theme-ensure-updates-are-visible-to-other-departments",
+      "title": "Implement Packing module to view school details and update packing status: student kit count, add-on count, packing/dispatch status and dispatch details, and current curriculum theme; ensure updates are visible to other departments.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-training-module-to-log-training-visits-and-raise-academic-queries-record-visit-date-reason-visiting-person-contact-person-mobile-number-observations-upload-download-classroom-observation-pdfs-and-create-academic-queries-linked-to-the-school",
+      "title": "Implement Training module to log training visits and raise academic queries: record visit date, reason, visiting person, contact person mobile number, observations, upload/download classroom observation PDFs, and create academic queries linked to the school.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-academic-module-to-view-academic-queries-raised-by-trainers-respond-to-them-and-update-query-status-ensure-query-lifecycle-and-responses-are-fully-auditable",
+      "title": "Implement Academic module to view academic queries raised by trainers, respond to them, and update query status; ensure query lifecycle and responses are fully auditable.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-global-tables-with-filtering-and-search-for-key-lists-schools-payments-packing-statuses-training-visits-academic-queries-and-ensure-all-data-entry-is-form-based-with-validation-and-clear-english-error-handling",
+      "title": "Add global tables with filtering and search for key lists (schools, payments, packing statuses, training visits, academic queries) and ensure all data entry is form-based with validation and clear English error handling.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-comprehensive-audit-logging-system-for-all-create-update-actions-across-modules-schools-staff-payments-packing-visits-queries-and-provide-an-admin-facing-activity-audit-log-viewer-with-filtering-by-actor-entity-type-school-id-and-date-range",
+      "title": "Implement a comprehensive audit logging system for all create/update actions across modules (schools, staff, payments, packing, visits, queries) and provide an Admin-facing activity/audit log viewer with filtering by actor, entity type, school ID, and date range.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-deliver-a-clean-simple-functional-responsive-desktop-first-ui-with-a-coherent-visual-theme-applied-consistently-across-dashboards-forms-and-tables",
+      "title": "Deliver a clean, simple, functional, responsive (desktop-first) UI with a coherent visual theme applied consistently across dashboards, forms, and tables.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Implement secure authentication with role-based login redirect to role dashboards (Admin, Accounts, Packing, Marketing, Training, Academic)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Implement strict role-based access control rules, including Marketing-only school creation and view-only core school details for non-Marketing roles",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Create core data models and shared School ID workflow (School, Staff, Payment, Packing Status, Training Visit, Academic Query)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Build role-specific dashboards with summary cards, tables, notifications, and Admin global visibility/insights",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Build form-based CRUD pages with validation and clear error handling across modules (schools, payments, packing, visits, queries)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Enable PDF upload/download where required (payment proof PDFs, classroom observation PDFs)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Add table search and filtering on key lists (schools, payments, packing, visits, queries)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Implement audit logging for all actions/updates with timestamps and actor identity; Admin can review activity",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Deliver responsive desktop-first UI with clean, simple, functional design",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Adopt scalable, modular application architecture to support multi-department workflows on shared school data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Create the core backend data models and persistence for: School, Staff, Payment, Packing Status, Training Visit, Academic Query, and Audit Log entries; ensure all department operations reference a single shared School ID and records are time-stamped.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Braindemics",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

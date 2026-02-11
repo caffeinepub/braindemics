@@ -1,73 +1,99 @@
 {
   "kind": "build_request",
-  "title": "Light-mode white backgrounds for Demo role switcher dropdown and Training Visit form",
-  "priority": "normal",
+  "title": "Move “Register School” to Admin navigation and make Marketing view-only for schools",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-58",
-      "text": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
+      "id": "REQ-1",
+      "text": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1",
+          "msg-0"
         ],
         "quotes": [
-          "make switching role drop down background color is white.",
-          "yes imean Demo/Preview Mode role switcher in the top banner",
-          "Should these background changes apply only in light mode"
+          "move register school option to admin page, now its in Marketing page",
+          "Register new school item from Marketing page to be replace here"
         ]
       },
       "acceptanceCriteria": [
-        "When Demo/Preview Mode is active, the role switcher SelectTrigger in the top banner renders with a solid white background in light mode.",
-        "When the role switcher dropdown is opened, the dropdown content surface renders with a solid white background in light mode (no transparency).",
-        "In dark mode, the role switcher retains the existing dark-mode look and remains readable (do not force a white background in dark mode).",
-        "No changes to role-switching behavior: selecting a role still updates the demo role and navigates to the correct dashboard route."
+        "When logged in as Admin, the header navigation includes a “Register School” item that navigates to the school registration form.",
+        "When logged in as Marketing, no “Register School” item is present in the header navigation.",
+        "When logged in as Marketing, no “Register School” item is present in the role-based sidebar navigation (if used)."
       ]
     },
     {
-      "id": "REQ-59",
-      "text": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
+      "id": "REQ-2",
+      "text": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1",
+          "msg-0"
         ],
         "quotes": [
-          "Edit Training visit Form background color white",
-          "For “Training visit form background color white”, do you want the entire form container to be white",
-          "Should these background changes apply only in light mode"
+          "move register school option to admin page, now its in Marketing page",
+          "we should remove edit option and register option"
         ]
       },
       "acceptanceCriteria": [
-        "On the Training Visits page, opening the Log Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
-        "On the Training Visits page, opening the Edit Training Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
-        "In dark mode, the dialog keeps the existing dark-mode background tokens and remains readable (do not force a white background in dark mode).",
-        "Opening and closing the dialog, saving, and canceling do not produce runtime errors and do not break Demo/Preview Mode behavior."
+        "Admin users can open the registration form from the Admin navigation and successfully reach the registration page.",
+        "Marketing users cannot reach the registration form via direct URL to the previous Marketing registration route; they are redirected to the Marketing dashboard (or another authorized page).",
+        "No broken links remain in the Marketing UI after removing the register option."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-0"
+        ],
+        "quotes": [
+          "marketing only can view the school's all details",
+          "we should remove edit option and register option"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When logged in as Marketing and viewing a school’s details, there is no visible “Edit” button and no edit/save/cancel controls are available.",
+        "When logged in as Marketing, all school detail inputs remain disabled/read-only.",
+        "When logged in as Admin, the existing edit workflow on the School Details page continues to work as before."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls, even if they attempt to bypass the UI; Admin users must retain these capabilities.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-0"
+        ],
+        "quotes": [
+          "marketing only can view the school's all details",
+          "we should remove edit option and register option"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Calls to create/register a new school from a Marketing identity are rejected with an authorization error.",
+        "Calls to update school details from a Marketing identity are rejected with an authorization error.",
+        "Admin identities can still create/register new schools and update school details successfully.",
+        "Read-only school retrieval/listing remains available for Marketing."
       ]
     }
   ],
   "constraints": [
-    "Frontend changes must be limited to the relevant components/pages and must not introduce global background color changes across the app.",
-    "Apply the requested white background changes only in light mode; preserve existing dark-mode styling.",
-    "Do not modify any files under the immutable UI components directory (frontend/src/components/ui)."
+    "Frontend files in immutablePaths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Backend must remain a single-actor Motoko architecture; only add migration.mo if existing stable state must be upgraded."
   ],
   "nonGoals": [
-    "No backend/canister changes.",
-    "No redesign of the Demo/Preview banner or Training page layout beyond the requested background color adjustments.",
-    "No changes to authentication, route guarding, or demo-session logic."
+    "Redesigning the Marketing Dashboard layout or adding new marketing features beyond removing Register/Edit capabilities.",
+    "Adding new authentication providers (only Internet Identity is supported).",
+    "Changing school domain fields or adding new school attributes."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

@@ -298,12 +298,19 @@ export default function SchoolPackingPage() {
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger id="class">
+                <SelectTrigger 
+                  id="class"
+                  className="bg-white dark:bg-card"
+                >
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-popover">
                   {PACKING_CLASSES.map((cls) => (
-                    <SelectItem key={cls.value} value={cls.value}>
+                    <SelectItem 
+                      key={cls.value} 
+                      value={cls.value}
+                      className="hover:bg-[#e73d4b] hover:text-white focus:bg-[#e73d4b] focus:text-white"
+                    >
                       {cls.label}
                     </SelectItem>
                   ))}
@@ -313,12 +320,19 @@ export default function SchoolPackingPage() {
             <div className="space-y-2">
               <Label htmlFor="theme">Theme</Label>
               <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                <SelectTrigger id="theme">
+                <SelectTrigger 
+                  id="theme"
+                  className="bg-white dark:bg-card"
+                >
                   <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-popover">
                   {PACKING_THEMES.map((theme) => (
-                    <SelectItem key={theme.value} value={theme.value}>
+                    <SelectItem 
+                      key={theme.value} 
+                      value={theme.value}
+                      className="hover:bg-[#e73d4b] hover:text-white focus:bg-[#e73d4b] focus:text-white"
+                    >
                       {theme.label}
                     </SelectItem>
                   ))}
@@ -327,45 +341,43 @@ export default function SchoolPackingPage() {
             </div>
           </div>
 
-          <div className="border-t pt-6">
-            <h3 className="font-semibold mb-4">Counts for {selectedClass} - {selectedTheme}</h3>
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="totalCount">Total Count</Label>
-                <Input
-                  id="totalCount"
-                  type="number"
-                  value={countsData.totalCount}
-                  onChange={(e) => setCountsData({ ...countsData, totalCount: e.target.value })}
-                  min="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="packedCount">Packed Count</Label>
-                <Input
-                  id="packedCount"
-                  type="number"
-                  value={countsData.packedCount}
-                  onChange={(e) => setCountsData({ ...countsData, packedCount: e.target.value })}
-                  min="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addOnCountDetail">Add-On Count</Label>
-                <Input
-                  id="addOnCountDetail"
-                  type="number"
-                  value={countsData.addOnCount}
-                  onChange={(e) => setCountsData({ ...countsData, addOnCount: e.target.value })}
-                  min="0"
-                />
-              </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="totalCount">Total Count</Label>
+              <Input
+                id="totalCount"
+                type="number"
+                value={countsData.totalCount}
+                onChange={(e) => setCountsData({ ...countsData, totalCount: e.target.value })}
+                min="0"
+              />
             </div>
-            <Button onClick={handleSaveCounts} disabled={updateCountMutation.isPending} className="mt-4">
-              {updateCountMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Counts
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="packedCount">Packed Count</Label>
+              <Input
+                id="packedCount"
+                type="number"
+                value={countsData.packedCount}
+                onChange={(e) => setCountsData({ ...countsData, packedCount: e.target.value })}
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addOnCountDetail">Add-On Count</Label>
+              <Input
+                id="addOnCountDetail"
+                type="number"
+                value={countsData.addOnCount}
+                onChange={(e) => setCountsData({ ...countsData, addOnCount: e.target.value })}
+                min="0"
+              />
+            </div>
           </div>
+
+          <Button onClick={handleSaveCounts} disabled={updateCountMutation.isPending}>
+            {updateCountMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Counts
+          </Button>
         </CardContent>
       </Card>
     </div>

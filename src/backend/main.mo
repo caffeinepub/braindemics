@@ -693,7 +693,7 @@ actor {
     website : ?Text,
     studentCount : Nat,
   ) : async () {
-    requireAnyRole(caller, [#admin, #marketing]);
+    requireAdmin(caller);
 
     if (schools.containsKey(id)) {
       Runtime.trap("School with this ID already exists");
@@ -738,7 +738,7 @@ actor {
     website : ?Text,
     studentCount : Nat,
   ) : async () {
-    requireAnyRole(caller, [#admin, #marketing]);
+    requireAdmin(caller);
 
     switch (schools.get(id)) {
       case (null) { Runtime.trap("School not found") };
@@ -1235,3 +1235,4 @@ actor {
     logs.sort();
   };
 };
+

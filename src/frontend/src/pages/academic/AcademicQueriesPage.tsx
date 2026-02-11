@@ -144,7 +144,7 @@ export default function AcademicQueriesPage() {
                 <p className="text-xs font-medium mb-1">Query:</p>
                 <p className="text-sm">{selectedQuery.queries}</p>
               </div>
-              <form onSubmit={handleSubmitResponse} className="space-y-4">
+              <form onSubmit={handleSubmitResponse} className="space-y-4 p-6 bg-white dark:bg-card rounded-lg">
                 <div className="space-y-2">
                   <Label htmlFor="response">Response</Label>
                   <Textarea

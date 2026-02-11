@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-demo-preview-mode-role-switcher-dropdown-in-the-top-banner-so-its-trigger-and-opened-dropdown-surface-render-with-a-solid-white-background-in-light-mode-while-preserving-existing-styling-behavior-in-dark-mode",
-      "featureTitle": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
+      "featureId": "feature-move-the-register-school-navigation-entry-from-the-marketing-ui-to-the-admin-ui-so-that-admin-users-see-a-register-school-item-in-the-top-navigation-header-next-to-the-existing-admin-items-and-marketing-users-no-longer-see-any-register-school-navigation-entry",
+      "featureTitle": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
       "files": [
-        "frontend/src/components/demo/DemoPreviewBanner.tsx"
+        "frontend/src/components/layout/AppLayout.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,15 +17,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-58"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-training-module-training-visit-create-edit-form-container-to-have-a-solid-white-background-in-light-mode-entire-form-container-while-preserving-existing-styling-behavior-in-dark-mode",
-      "featureTitle": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
+      "featureId": "feature-update-routing-so-the-school-registration-page-is-accessible-from-an-admin-route-e-g-under-admin-and-is-not-accessible-to-marketing-users-if-a-marketing-user-attempts-to-access-the-old-marketing-registration-route-directly-redirect-them-to-the-marketing-dashboard-or-an-authorized-page",
+      "featureTitle": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
       "files": [
-        "frontend/src/pages/training/SchoolTrainingPage.tsx"
+        "frontend/src/routeTree.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -37,7 +37,27 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-59"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restrict-marketing-to-view-only-access-on-the-school-details-page-by-removing-the-edit-action-for-marketing-users-and-ensuring-the-form-fields-remain-read-only-for-them",
+      "featureTitle": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+      "files": [
+        "frontend/src/pages/schools/SchoolDetailsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

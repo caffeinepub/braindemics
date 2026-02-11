@@ -51,7 +51,8 @@ export default function SchoolDetailsPage() {
     }
   }, [school]);
 
-  const canEdit = profile?.role === StaffRole.marketing || profile?.role === StaffRole.admin;
+  // Only Admin can edit, Marketing is read-only
+  const canEdit = profile?.role === StaffRole.admin;
 
   const handleSave = async () => {
     try {

@@ -1,46 +1,68 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T12:38:49.297Z",
+  "generatedAt": "2026-02-11T04:33:17.202Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 4,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-58",
-        "summary": "Update the Demo/Preview Mode role switcher dropdown in the top banner so its trigger and opened dropdown surface render with a solid white background in light mode, while preserving existing styling behavior in dark mode.",
+        "id": "REQ-1",
+        "summary": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/demo/DemoPreviewBanner.tsx"
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/src/components/layout/RoleNav.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/demo/DemoPreviewBanner.tsx"
+          "frontend/src/components/layout/AppLayout.tsx"
         ]
       },
       {
-        "id": "REQ-59",
-        "summary": "Update the Training module Training Visit create/edit form container to have a solid white background in light mode (entire form container), while preserving existing styling behavior in dark mode.",
+        "id": "REQ-2",
+        "summary": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/training/SchoolTrainingPage.tsx"
+          "frontend/src/routeTree.tsx",
+          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/training/SchoolTrainingPage.tsx"
+          "frontend/src/routeTree.tsx"
         ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/schools/SchoolDetailsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/schools/SchoolDetailsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls, even if they attempt to bypass the UI; Admin users must retain these capabilities.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/demo/DemoPreviewBanner.tsx",
-    "frontend/src/pages/training/SchoolTrainingPage.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+    "frontend/src/routeTree.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

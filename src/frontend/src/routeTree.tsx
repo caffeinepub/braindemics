@@ -24,9 +24,14 @@ import { getCallerUserProfileQuery } from './hooks/useQueries';
 import { isDemoActive, getDemoRole } from './demo/demoSession';
 import { createDemoProfile } from './demo/demoProfile';
 import { getDashboardRoute } from './demo/demoRoutes';
+import { StaffRole, UserProfile } from './backend';
 
 interface RouterContext {
   queryClient: QueryClient;
+}
+
+interface AuthenticatedContext extends RouterContext {
+  profile: UserProfile;
 }
 
 export const rootRoute = createRootRoute({
@@ -129,6 +134,30 @@ const adminSchoolDetailsRoute = createRoute({
   component: AdminSchoolDetailsPage,
 });
 
+// Admin school create route (moved from marketing)
+const adminSchoolCreateRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/admin/schools/create',
+  component: SchoolCreatePage,
+  beforeLoad: async ({ context }) => {
+    const authContext = context as AuthenticatedContext;
+    
+    // Check for demo mode first
+    if (isDemoActive()) {
+      const demoRole = getDemoRole();
+      if (demoRole !== StaffRole.admin) {
+        throw redirect({ to: getDashboardRoute(demoRole || StaffRole.marketing) });
+      }
+      return;
+    }
+    
+    // Non-demo mode: require admin role
+    if (!authContext.profile || authContext.profile.role !== StaffRole.admin) {
+      throw redirect({ to: '/marketing/dashboard' });
+    }
+  },
+});
+
 // Marketing routes
 const marketingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -136,10 +165,30 @@ const marketingDashboardRoute = createRoute({
   component: MarketingDashboardPage,
 });
 
-const schoolCreateRoute = createRoute({
+// Legacy marketing school create route - redirect to appropriate dashboard
+const legacySchoolCreateRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/marketing/schools/create',
-  component: SchoolCreatePage,
+  beforeLoad: async ({ context }) => {
+    const authContext = context as AuthenticatedContext;
+    
+    // Check for demo mode first
+    if (isDemoActive()) {
+      const demoRole = getDemoRole();
+      if (demoRole === StaffRole.admin) {
+        throw redirect({ to: '/admin/schools/create' });
+      } else {
+        throw redirect({ to: getDashboardRoute(demoRole || StaffRole.marketing) });
+      }
+    }
+    
+    // Non-demo mode: redirect based on role
+    if (authContext.profile?.role === StaffRole.admin) {
+      throw redirect({ to: '/admin/schools/create' });
+    } else {
+      throw redirect({ to: '/marketing/dashboard' });
+    }
+  },
 });
 
 // Accounts routes
@@ -222,8 +271,9 @@ export const routeTree = rootRoute.addChildren([
     auditLogRoute,
     outstandingAmountRoute,
     adminSchoolDetailsRoute,
+    adminSchoolCreateRoute,
     marketingDashboardRoute,
-    schoolCreateRoute,
+    legacySchoolCreateRoute,
     accountsDashboardRoute,
     schoolPaymentsRoute,
     packingDashboardRoute,

@@ -1,39 +1,63 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Light-mode solid white surfaces for Demo role switcher dropdown and Training Visit form",
+  "title": "Move Register School to Admin navigation and make Marketing school details view-only",
   "requirements": [
     {
-      "id": "REQ-58",
-      "summary": "Ensure the Demo/Preview Mode role switcher trigger and dropdown content render with solid white backgrounds in light mode while preserving existing dark-mode styling and behavior.",
+      "id": "REQ-1",
+      "summary": "Move the “Register School” navigation item from Marketing to Admin in both header and any role-based sidebar nav.",
       "acceptanceCriteria": [
-        "When Demo/Preview Mode is active, the role switcher SelectTrigger in the top banner renders with a solid white background in light mode.",
-        "When the role switcher dropdown is opened, the dropdown content surface renders with a solid white background in light mode (no transparency).",
-        "In dark mode, the role switcher retains the existing dark-mode look and remains readable (do not force a white background in dark mode).",
-        "No changes to role-switching behavior: selecting a role still updates the demo role and navigates to the correct dashboard route."
+        "When logged in as Admin, the header navigation includes a “Register School” item that navigates to the school registration form.",
+        "When logged in as Marketing, no “Register School” item is present in the header navigation.",
+        "When logged in as Marketing, no “Register School” item is present in the role-based sidebar navigation (if used)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/demo/DemoPreviewBanner.tsx",
+          "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Update the role switcher SelectTrigger and SelectContent className styling to force a solid white surface in light mode (e.g., bg-white and non-transparent overrides), while explicitly preserving the existing dark-mode surface tokens via dark: classes. Keep all role-switching logic unchanged and avoid touching any files under frontend/src/components/ui."
+          "description": "Update the role-based header navigation so Admin includes “Register School” (pointing to the new admin route) and Marketing no longer includes it. Use the authorization component’s role-based access concept (via the fetched user profile role) to drive which items render. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/layout/RoleNav.tsx",
+          "operation": "modify",
+          "description": "Update role-based sidebar navigation items so Admin includes “Register School” (pointing to the new admin route) and Marketing no longer includes it. Use the authorization component’s role-based access concept (via staff role) to determine visibility. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-59",
-      "summary": "Ensure the Training Visit create/edit dialog’s form container renders with a solid white background in light mode while preserving existing dark-mode styling and functionality.",
+      "id": "REQ-2",
+      "summary": "Move the school registration route under an Admin path and prevent Marketing from accessing it, redirecting old Marketing URLs to the Marketing dashboard.",
       "acceptanceCriteria": [
-        "On the Training Visits page, opening the Log Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
-        "On the Training Visits page, opening the Edit Training Visit dialog shows the entire form container with a solid white background in light mode (no transparency).",
-        "In dark mode, the dialog keeps the existing dark-mode background tokens and remains readable (do not force a white background in dark mode).",
-        "Opening and closing the dialog, saving, and canceling do not produce runtime errors and do not break Demo/Preview Mode behavior."
+        "Admin users can open the registration form from the Admin navigation and successfully reach the registration page.",
+        "Marketing users cannot reach the registration form via direct URL to the previous Marketing registration route; they are redirected to the Marketing dashboard (or another authorized page).",
+        "No broken links remain in the Marketing UI after removing the register option."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/training/SchoolTrainingPage.tsx",
+          "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Adjust the Create/Edit Visit DialogContent styling so the entire visit form container uses a solid white background in light mode (e.g., bg-white) and preserves existing dark-mode styling via dark: classes (keep current tokens/behavior for dark mode). Scope changes only to the training visit dialog (not global styles) and do not modify any files under frontend/src/components/ui."
+          "description": "Register a new admin-only route for the school registration page under /admin/... and add a guard that redirects non-admin (including Marketing) to an authorized page (e.g., Marketing dashboard). Also keep the previous /marketing/... registration path as a redirect route that sends Marketing to their dashboard and Admin to the new admin registration route. Use the authorization component’s role-based access concept (profile role) for the route guards. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the registration page behavior aligns with admin-only routing: update any internal navigation (e.g., post-submit and cancel flows) to route users to appropriate admin pages when accessed via the new /admin/... route, and avoid assumptions that this page is Marketing-only. Use the authorization component’s role-based access concept (caller profile role) to decide safe navigation targets. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Make Marketing view-only on the School Details page by removing Edit actions and keeping fields read-only for Marketing.",
+      "acceptanceCriteria": [
+        "When logged in as Marketing and viewing a school’s details, there is no visible “Edit” button and no edit/save/cancel controls are available.",
+        "When logged in as Marketing, all school detail inputs remain disabled/read-only.",
+        "When logged in as Admin, the existing edit workflow on the School Details page continues to work as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Update role checks so only Admin can enter edit mode and see Edit/Save/Cancel controls; Marketing must always remain in view-only mode with inputs disabled. Use the authorization component’s role-based access concept (caller profile role) to control edit capability. Verify the component's usage instructions before implementing."
         }
       ]
     }

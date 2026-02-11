@@ -34,10 +34,10 @@ export default function AppLayout() {
       { label: 'Staff Management', path: '/admin/staff' },
       { label: 'Outstanding Amounts', path: '/admin/outstanding' },
       { label: 'Audit Logs', path: '/admin/audit' },
+      { label: 'Register School', path: '/admin/schools/create' },
     ],
     marketing: [
       { label: 'Dashboard', path: '/marketing/dashboard' },
-      { label: 'Register School', path: '/marketing/schools/create' },
     ],
     accounts: [
       { label: 'Dashboard', path: '/accounts/dashboard' },

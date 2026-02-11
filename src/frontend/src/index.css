@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Primary brand color - teal/cyan */
+    /* Primary brand color - light blue */
     --primary: oklch(65% 0.15 195);
     --primary-foreground: oklch(100% 0 0);
 
@@ -54,7 +54,7 @@
   }
 
   .dark {
-    /* Primary brand color - teal/cyan */
+    /* Primary brand color - light blue */
     --primary: oklch(70% 0.15 195);
     --primary-foreground: oklch(15% 0.01 240);
 
@@ -108,5 +108,64 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Global button hover override - brand red hover for all buttons */
+  button:not(:disabled):hover,
+  .button:not(:disabled):hover,
+  [role="button"]:not(:disabled):hover {
+    --tw-bg-opacity: 1;
+  }
+  
+  /* Primary/default button styles with light blue default and red hover */
+  button[class*="bg-primary"]:not(:disabled),
+  .button[class*="bg-primary"]:not(:disabled) {
+    background-color: #3bbcc4 !important;
+    color: white !important;
+  }
+  
+  button[class*="bg-primary"]:not(:disabled):hover,
+  .button[class*="bg-primary"]:not(:disabled):hover {
+    background-color: #e73d4b !important;
+    color: white !important;
+  }
+
+  /* Default variant buttons (shadcn Button component default) */
+  button:not([class*="variant-"]):not([class*="bg-secondary"]):not([class*="bg-destructive"]):not([class*="bg-outline"]):not([class*="bg-ghost"]):not([class*="bg-link"]):not(:disabled),
+  button[class*="variant-default"]:not(:disabled) {
+    background-color: #3bbcc4 !important;
+    color: white !important;
+  }
+
+  button:not([class*="variant-"]):not([class*="bg-secondary"]):not([class*="bg-destructive"]):not([class*="bg-outline"]):not([class*="bg-ghost"]):not([class*="bg-link"]):not(:disabled):hover,
+  button[class*="variant-default"]:not(:disabled):hover {
+    background-color: #e73d4b !important;
+    color: white !important;
+  }
+
+  /* Outline variant buttons */
+  button[class*="variant-outline"]:not(:disabled):hover {
+    background-color: #e73d4b !important;
+    color: white !important;
+    border-color: #e73d4b !important;
+  }
+
+  /* Ghost variant buttons */
+  button[class*="variant-ghost"]:not(:disabled):hover {
+    background-color: #e73d4b !important;
+    color: white !important;
+  }
+
+  /* Secondary variant buttons */
+  button[class*="variant-secondary"]:not(:disabled) {
+    background-color: #3bbcc4 !important;
+    color: white !important;
+  }
+
+  button[class*="variant-secondary"]:not(:disabled):hover {
+    background-color: #e73d4b !important;
+    color: white !important;
   }
 }

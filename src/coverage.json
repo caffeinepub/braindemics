@@ -1,34 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T04:33:17.202Z",
+  "generatedAt": "2026-02-12T04:37:58.584Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 3,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
+        "summary": "Eliminate the blank white screen on the deployed site by ensuring the app always renders a visible UI state (login screen, loading state, or error state) at route \"/\" and protected routes.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/components/layout/RoleNav.tsx"
+          "frontend/src/pages/IndexGatePage.tsx",
+          "frontend/src/routeTree.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx"
+          "frontend/src/pages/IndexGatePage.tsx",
+          "frontend/src/routeTree.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
+        "summary": "Refactor route-level authentication logic in frontend/src/routeTree.tsx to avoid fetching the caller profile via React Query during route beforeLoad (remove reliance on getCallerUserProfileQuery/ensureQueryData there), and instead perform only demo-session routing decisions in beforeLoad; perform non-demo auth/profile checks in UI components where hooks are valid.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/routeTree.tsx",
-          "frontend/src/pages/marketing/SchoolCreatePage.tsx"
+          "frontend/src/routeTree.tsx"
         ],
         "matchedFiles": [
           "frontend/src/routeTree.tsx"
@@ -36,32 +36,50 @@
       },
       {
         "id": "REQ-3",
-        "summary": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+        "summary": "Update frontend/src/components/layout/AppLayout.tsx so that when profile is missing (and demo mode is not active), it renders a safe fallback that navigates to \"/login\" (and/or shows an inline message) rather than returning null.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx"
+          "frontend/src/components/layout/AppLayout.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/schools/SchoolDetailsPage.tsx"
+          "frontend/src/components/layout/AppLayout.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls, even if they attempt to bypass the UI; Admin users must retain these capabilities.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Add a simple global client-side error fallback so that unexpected render/runtime errors show a user-visible error panel with a \"Go to Login\" action instead of a blank white screen.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/error/GlobalErrorBoundary.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/error/GlobalErrorBoundary.tsx",
+          "frontend/src/App.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
+    "frontend/src/components/error/GlobalErrorBoundary.tsx",
     "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+    "frontend/src/pages/IndexGatePage.tsx",
     "frontend/src/routeTree.tsx",
     "project_state.json",
     "scratch/component-selection.json",

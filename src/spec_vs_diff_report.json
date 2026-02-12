@@ -1,96 +1,59 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T04:33:17.186Z",
-  "summary": "REQ-1 appears implemented via role-based header navigation changes. REQ-2 is described as implemented in the routeTree summary (admin create route + legacy redirect), but the provided truncated code does not fully evidence the redirects/guards. REQ-3 is partially evidenced (Edit controls hidden for non-admin), but the diff snippet does not clearly show all fields are read-only/disabled for Marketing. REQ-4 backend authorization changes are not evidenced beyond adding an authorization mixin; no explicit create/update role checks are shown in the truncated backend diff.",
+  "generatedAt": "2026-02-12T04:37:58.581Z",
+  "summary": "Core routing/auth-gating changes appear to address the blank-screen issue by adding an index gate page with a visible loading state, simplifying routeTree beforeLoad to demo-only logic, making AppLayout render safe loading/fallback UIs with redirects to /login, and adding a global error boundary with a Go to Login action. However, the diff does not provide sufficient evidence that there is exactly one QueryClient instance across the whole runtime (main.tsx is immutable and not shown), and there are several additional unrelated feature/UI changes indicated by the file summaries that go beyond the requested blank-screen fix.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users; redirect Marketing users who hit the old Marketing registration route.",
-      "reason": "The diff summary claims this behavior, but the provided truncated routeTree snippet does not show the actual /admin/schools/create route definition, the legacy marketing route, or the redirect/guard logic, so implementation cannot be confirmed from the evidence provided.",
-      "evidence": [
-        "frontend/src/routeTree.tsx",
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
-      "reason": "The diff shows the Edit button is only rendered when role is Admin, but the truncated snippet does not show the input components being disabled/read-only for Marketing across the form, so full compliance with the read-only fields acceptance criteria cannot be confirmed.",
-      "evidence": [
-        "frontend/src/pages/schools/SchoolDetailsPage.tsx"
-      ]
-    },
-    {
       "id": "REQ-4",
-      "requirement": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls; Admin users must retain these capabilities.",
-      "reason": "backend/main.mo shows inclusion of an authorization mixin/state, but the truncated diff does not show any explicit authorization checks/role gates on the school create/register and update methods, nor error behavior for Marketing callers.",
+      "requirement": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
+      "reason": "The diff shows a QueryClient being created in frontend/src/App.tsx and passed to both QueryClientProvider and the router context, but main.tsx is immutable and not included in the diff; therefore it's not possible to confirm that main.tsx does not also create/provide a separate QueryClient instance. The acceptance criterion requires exactly one runtime instance across the app.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/App.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Global UI/button styling changes (OKLCH tokens and custom button styling with light blue default and brand red hover applied across the app).",
-      "reason": "Not requested; request explicitly focuses on moving Register School nav, routing, Marketing view-only on school details, and backend authorization.",
+      "description": "Admin audit log viewer with filtering and sortable table.",
+      "reason": "Not requested by the BuildRequest (non-goal: no new product features beyond fixing blank-screen/deployment usability).",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/index.css)"
+        "frontend-file-summaries.txt (mentions frontend/src/pages/admin/AuditLogPage.tsx)"
       ]
     },
     {
-      "description": "Packing module UI enhancements (white background dropdowns, hover states, packing options constants).",
-      "reason": "Not requested and outside the scope/non-goals (no new marketing features; also unrelated to register/edit restrictions).",
+      "description": "Staff management page with create/update forms, role assignment, staff table, and a 'repair staff permissions' action.",
+      "reason": "Not requested; appears to be feature work unrelated to routing/auth gating and blank-screen fix.",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/packing/SchoolPackingPage.tsx)",
-        "frontend-file-summaries.txt (frontend/src/pages/packing/packingOptions.ts)",
-        "frontend-file-summaries.txt (frontend/src/pages/packing/PackingSchoolsPage.tsx)"
+        "frontend-file-summaries.txt (mentions frontend/src/pages/admin/StaffManagementPage.tsx)"
       ]
     },
     {
-      "description": "Training module feature changes (create/edit visit dialogs, raise query dialog styling/state management) and demo data store updates for training visits.",
-      "reason": "Not requested; unrelated to moving Register School or restricting Marketing edit/create school capabilities.",
+      "description": "Extensive Demo/Preview Mode data persistence/store updates including BigInt-safe serialization for multiple modules (schools, outstanding amounts, packing, training, academic queries).",
+      "reason": "Not requested; this is substantial new/expanded functionality beyond the specified routing/auth and error fallback fixes.",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/training/SchoolTrainingPage.tsx)",
-        "frontend-file-summaries.txt (frontend/src/demo/demoDataStore.ts)"
+        "frontend-file-summaries.txt (mentions frontend/src/demo/demoDataStore.ts)"
       ]
     },
     {
-      "description": "Admin audit log viewer feature (filtering/search/sortable table).",
-      "reason": "Not requested; adds new admin feature beyond specified requirements.",
+      "description": "Multiple module page enhancements (packing editor dropdown styling, training dialogs, school details role-based editability, accounts payments editing) and global CSS/button styling changes.",
+      "reason": "Not requested; these are UI/feature changes outside the scope of eliminating the blank white screen and refactoring auth gating/query client usage.",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/admin/AuditLogPage.tsx)"
-      ]
-    },
-    {
-      "description": "Login page changes for demo vs Internet Identity error handling.",
-      "reason": "Not requested; authentication provider changes were a non-goal (even though II remains, this is still extra scope).",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/LoginPage.tsx)"
-      ]
-    },
-    {
-      "description": "Expanded/demo mode session management and demo profile factory changes (localStorage hardening, role presence checks, synthetic profiles).",
-      "reason": "Not requested; extra functionality beyond required nav/routing/authorization changes.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/demo/demoSession.ts)",
-        "frontend-file-summaries.txt (frontend/src/demo/demoProfile.ts)"
-      ]
-    },
-    {
-      "description": "Accounts module changes enabling outstanding amount editing in Demo/Preview mode.",
-      "reason": "Not requested; unrelated to Register School navigation and Marketing view-only requirements.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/accounts/SchoolPaymentsPage.tsx)"
+        "frontend-file-summaries.txt (mentions frontend/src/pages/packing/SchoolPackingPage.tsx)",
+        "frontend-file-summaries.txt (mentions frontend/src/pages/training/SchoolTrainingPage.tsx)",
+        "frontend-file-summaries.txt (mentions frontend/src/pages/schools/SchoolDetailsPage.tsx)",
+        "frontend-file-summaries.txt (mentions frontend/src/pages/accounts/SchoolPaymentsPage.tsx)",
+        "frontend-file-summaries.txt (mentions frontend/src/index.css)"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.68,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/error/GlobalErrorBoundary.tsx",
     "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+    "frontend/src/pages/IndexGatePage.tsx",
     "frontend/src/routeTree.tsx",
     "project_state.json"
   ]

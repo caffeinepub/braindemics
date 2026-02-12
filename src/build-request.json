@@ -1,99 +1,119 @@
 {
   "kind": "build_request",
-  "title": "Move “Register School” to Admin navigation and make Marketing view-only for schools",
+  "title": "Fix blank white screen by correcting routing/auth gating and QueryClient usage",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
+      "text": "Eliminate the blank white screen on the deployed site by ensuring the app always renders a visible UI state (login screen, loading state, or error state) at route \"/\" and protected routes.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-0"
+          "msg-blank-1"
         ],
         "quotes": [
-          "move register school option to admin page, now its in Marketing page",
-          "Register new school item from Marketing page to be replace here"
+          "i cant view the site, it looks blank white",
+          "there isno any loading spinner"
         ]
       },
       "acceptanceCriteria": [
-        "When logged in as Admin, the header navigation includes a “Register School” item that navigates to the school registration form.",
-        "When logged in as Marketing, no “Register School” item is present in the header navigation.",
-        "When logged in as Marketing, no “Register School” item is present in the role-based sidebar navigation (if used)."
+        "Opening the deployed app at \"/\" shows either the Login page or a loading indicator within 1 second; it must not remain a blank white screen.",
+        "If the user is not authenticated and demo mode is not active, navigating to any protected route (e.g. \"/admin/dashboard\") reliably redirects to \"/login\" (or displays a clear unauthenticated screen) instead of rendering nothing.",
+        "If demo mode is active, the app navigates to the correct demo dashboard route and renders the layout/content (not blank)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
+      "text": "Refactor route-level authentication logic in frontend/src/routeTree.tsx to avoid fetching the caller profile via React Query during route beforeLoad (remove reliance on getCallerUserProfileQuery/ensureQueryData there), and instead perform only demo-session routing decisions in beforeLoad; perform non-demo auth/profile checks in UI components where hooks are valid.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-0"
+          "msg-blank-1"
         ],
         "quotes": [
-          "move register school option to admin page, now its in Marketing page",
-          "we should remove edit option and register option"
+          "i want to see working demo version now"
         ]
       },
       "acceptanceCriteria": [
-        "Admin users can open the registration form from the Admin navigation and successfully reach the registration page.",
-        "Marketing users cannot reach the registration form via direct URL to the previous Marketing registration route; they are redirected to the Marketing dashboard (or another authorized page).",
-        "No broken links remain in the Marketing UI after removing the register option."
+        "frontend/src/routeTree.tsx no longer calls queryClient.ensureQueryData(getCallerUserProfileQuery()) in beforeLoad for \"/\" and the authenticated route gate.",
+        "When not in demo mode, visiting \"/\" results in a deterministic UI path (loading -> redirect/login) without route-load deadlocks.",
+        "Demo mode routing at \"/\" still redirects to the demo dashboard returned by getDashboardRoute(getDemoRole())."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+      "text": "Update frontend/src/components/layout/AppLayout.tsx so that when profile is missing (and demo mode is not active), it renders a safe fallback that navigates to \"/login\" (and/or shows an inline message) rather than returning null.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-0"
+          "msg-blank-1"
         ],
         "quotes": [
-          "marketing only can view the school's all details",
-          "we should remove edit option and register option"
+          "i cant view the site, it looks blank white"
         ]
       },
       "acceptanceCriteria": [
-        "When logged in as Marketing and viewing a school’s details, there is no visible “Edit” button and no edit/save/cancel controls are available.",
-        "When logged in as Marketing, all school detail inputs remain disabled/read-only.",
-        "When logged in as Admin, the existing edit workflow on the School Details page continues to work as before."
+        "If profileLoading is false and profile is null/undefined while not in demo mode, AppLayout triggers navigation to \"/login\" and shows a minimal loading/fallback view until navigation completes.",
+        "The authenticated layout never returns null in a way that results in a blank page."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls, even if they attempt to bypass the UI; Admin users must retain these capabilities.",
-      "target": "backend",
+      "text": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-0"
+          "msg-blank-1"
         ],
         "quotes": [
-          "marketing only can view the school's all details",
-          "we should remove edit option and register option"
+          "i cant view the site, it looks blank white"
         ]
       },
       "acceptanceCriteria": [
-        "Calls to create/register a new school from a Marketing identity are rejected with an authorization error.",
-        "Calls to update school details from a Marketing identity are rejected with an authorization error.",
-        "Admin identities can still create/register new schools and update school details successfully.",
-        "Read-only school retrieval/listing remains available for Marketing."
+        "There is exactly one QueryClient instance created for the app runtime and it is used by both <QueryClientProvider> and the router context.",
+        "After the change, navigation and data fetching (including demo mode) works without a blank screen regression."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add a simple global client-side error fallback so that unexpected render/runtime errors show a user-visible error panel with a \"Go to Login\" action instead of a blank white screen.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-blank-1"
+        ],
+        "quotes": [
+          "i want to see working demo version now"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If an uncaught error happens during initial render, the app displays an error view with readable text in English and a button/link that navigates to \"/login\".",
+        "The error fallback is styled consistently with the existing Tailwind/Shadcn UI components."
       ]
     }
   ],
   "constraints": [
-    "Frontend files in immutablePaths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Backend must remain a single-actor Motoko architecture; only add migration.mo if existing stable state must be upgraded."
+    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts (or .tsx), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui (immutable paths).",
+    "Keep the backend single-actor architecture; no additional canisters/services.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Redesigning the Marketing Dashboard layout or adding new marketing features beyond removing Register/Edit capabilities.",
-    "Adding new authentication providers (only Internet Identity is supported).",
-    "Changing school domain fields or adding new school attributes."
+    "Implementing new product features beyond fixing the blank-screen/deployment usability issue.",
+    "Adding third-party authentication providers (only Internet Identity and existing demo mode).",
+    "Adding external databases or non-IC backend services."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

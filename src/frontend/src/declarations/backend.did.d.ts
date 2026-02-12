@@ -61,6 +61,12 @@ export interface FilterCriteria {
   'filterEntityId' : [] | [string],
   'filterInitiator' : [] | [Principal],
 }
+export interface Notification {
+  'id' : string,
+  'content' : string,
+  'isRead' : boolean,
+  'timestamp' : bigint,
+}
 export type PackingClass = { 'class1' : null } |
   { 'class2' : null } |
   { 'class3' : null } |
@@ -103,8 +109,10 @@ export interface School {
   'lastUpdateTimestamp' : bigint,
   'address' : string,
   'createdTimestamp' : bigint,
+  'shippingAddress' : string,
   'contactNumber' : string,
   'studentCount' : bigint,
+  'product' : string,
 }
 export interface SectionMetadata {
   'section' : string,
@@ -198,6 +206,8 @@ export interface _SERVICE {
       string,
       [] | [string],
       bigint,
+      string,
+      string,
     ],
     undefined
   >,
@@ -222,6 +232,7 @@ export interface _SERVICE {
     [] | [ConsolidatedSchoolModuleData]
   >,
   'getFilteredAuditLogs' : ActorMethod<[FilterCriteria], Array<AuditLog>>,
+  'getNotifications' : ActorMethod<[], Array<Notification>>,
   'getOutstandingAmount' : ActorMethod<[string], bigint>,
   'getOutstandingAmountsBySchoolIds' : ActorMethod<
     [Array<string>],
@@ -246,6 +257,8 @@ export interface _SERVICE {
   'listAllSchools' : ActorMethod<[], Array<School>>,
   'listAllStaff' : ActorMethod<[], Array<StaffProfile>>,
   'listTrainingVisitsBySchool' : ActorMethod<[string], Array<TrainingVisit>>,
+  'markAllNotificationsAsRead' : ActorMethod<[], undefined>,
+  'markNotificationAsRead' : ActorMethod<[string], undefined>,
   'repairStaffProfilePermissions' : ActorMethod<[], bigint>,
   'respondToAcademicQuery' : ActorMethod<
     [string, string, { 'resolved' : null } | { 'open' : null }],
@@ -265,6 +278,8 @@ export interface _SERVICE {
       string,
       [] | [string],
       bigint,
+      string,
+      string,
     ],
     undefined
   >,

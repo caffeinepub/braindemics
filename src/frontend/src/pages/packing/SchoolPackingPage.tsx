@@ -1,383 +1,349 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useGetSchool, useGetPackingStatus, useCreateOrUpdatePackingStatus, useCreateOrUpdatePackingCount, useGetPackingCount } from '../../hooks/useQueries';
+import {
+  useGetSchool,
+  useGetPackingStatus,
+  useCreateOrUpdatePackingStatus,
+  useGetPackingCountsBySchool,
+  useCreateOrUpdatePackingCount,
+} from '../../hooks/useQueries';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { isDemoActive } from '../../demo/demoSession';
-import { PACKING_CLASSES, PACKING_THEMES } from './packingOptions';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 import { PackingClass, PackingTheme } from '../../backend';
+
+const THEMES = [
+  { value: PackingTheme.themeA, label: 'MYSELF' },
+  { value: PackingTheme.themeB, label: 'SHAPES' },
+  { value: PackingTheme.themeC, label: 'ANIMAL KINGDOM' },
+  { value: PackingTheme.themeD, label: 'PLANT TREES AND FLOWERS' },
+  { value: PackingTheme.themeE, label: 'FRUITS AND VEGETABLES' },
+];
+
+const CLASSES = [
+  { value: PackingClass.preSchool, label: 'Toddler' },
+  { value: PackingClass.class1, label: 'Beginner' },
+  { value: PackingClass.class2, label: 'Explorer' },
+  { value: PackingClass.class3, label: 'Master' },
+];
+
+type PackingRow = {
+  theme: PackingTheme;
+  themeLabel: string;
+  toddler: string;
+  beginner: string;
+  explorer: string;
+  master: string;
+  product: string;
+  details: string;
+};
 
 export default function SchoolPackingPage() {
   const { schoolId } = useParams({ from: '/authenticated/packing/schools/$schoolId' });
   const navigate = useNavigate();
   const { data: school, isLoading: schoolLoading } = useGetSchool(schoolId);
-  const { data: packingStatus, isLoading: statusLoading } = useGetPackingStatus(schoolId);
+  const { data: packingStatus } = useGetPackingStatus(schoolId);
   const updateStatusMutation = useCreateOrUpdatePackingStatus();
   const updateCountMutation = useCreateOrUpdatePackingCount();
 
-  const isDemo = isDemoActive();
+  const [kitCount, setKitCount] = useState('');
+  const [addOnCount, setAddOnCount] = useState('');
+  const [packed, setPacked] = useState(false);
+  const [dispatched, setDispatched] = useState(false);
+  const [dispatchDetails, setDispatchDetails] = useState('');
+  const [currentTheme, setCurrentTheme] = useState('');
 
-  const [selectedClass, setSelectedClass] = useState<string>('Beginner');
-  const [selectedTheme, setSelectedTheme] = useState<string>('MYSELF');
+  const [packingRows, setPackingRows] = useState<PackingRow[]>(
+    THEMES.map((theme) => ({
+      theme: theme.value,
+      themeLabel: theme.label,
+      toddler: '',
+      beginner: '',
+      explorer: '',
+      master: '',
+      product: '',
+      details: '',
+    }))
+  );
 
-  const [formData, setFormData] = useState({
-    kitCount: '0',
-    addOnCount: '0',
-    packed: false,
-    dispatched: false,
-    dispatchDetails: '',
-    currentTheme: '',
-  });
-
-  const [countsData, setCountsData] = useState({
-    totalCount: '0',
-    packedCount: '0',
-    addOnCount: '0',
-  });
-
-  // Map UI class/theme to backend enums
-  const mapClassToBackend = (uiClass: string): PackingClass => {
-    const mapping: Record<string, PackingClass> = {
-      'Beginner': PackingClass.preSchool,
-      'Explorer': PackingClass.class1,
-      'Master': PackingClass.class2,
-    };
-    return mapping[uiClass] || PackingClass.preSchool;
-  };
-
-  const mapThemeToBackend = (uiTheme: string): PackingTheme => {
-    const mapping: Record<string, PackingTheme> = {
-      'MYSELF': PackingTheme.themeA,
-      'SHAPES': PackingTheme.themeB,
-      'ANIMAL KINGDOM': PackingTheme.themeC,
-      'PLANT TREES AND FLOWERS': PackingTheme.themeD,
-      'FRUITS AND VEGETABLES': PackingTheme.themeE,
-      'FIVE ELEMENTS': PackingTheme.themeE,
-    };
-    return mapping[uiTheme] || PackingTheme.themeA;
-  };
-
-  // Load packing count for selected class/theme
-  const backendClass = mapClassToBackend(selectedClass);
-  const backendTheme = mapThemeToBackend(selectedTheme);
-  const { data: packingCount } = useGetPackingCount(schoolId, backendClass, backendTheme);
-
-  // Update form when data loads
-  useEffect(() => {
+  // Initialize form when data loads
+  useState(() => {
     if (packingStatus) {
-      setFormData({
-        kitCount: packingStatus.kitCount.toString(),
-        addOnCount: packingStatus.addOnCount.toString(),
-        packed: packingStatus.packed,
-        dispatched: packingStatus.dispatched,
-        dispatchDetails: packingStatus.dispatchDetails || '',
-        currentTheme: packingStatus.currentTheme,
-      });
+      setKitCount(packingStatus.kitCount.toString());
+      setAddOnCount(packingStatus.addOnCount.toString());
+      setPacked(packingStatus.packed);
+      setDispatched(packingStatus.dispatched);
+      setDispatchDetails(packingStatus.dispatchDetails || '');
+      setCurrentTheme(packingStatus.currentTheme);
     }
-  }, [packingStatus]);
+  });
 
-  useEffect(() => {
-    if (packingCount) {
-      setCountsData({
-        totalCount: packingCount.totalCount.toString(),
-        packedCount: packingCount.packedCount.toString(),
-        addOnCount: packingCount.addOnCount.toString(),
-      });
-    } else {
-      setCountsData({
-        totalCount: '0',
-        packedCount: '0',
-        addOnCount: '0',
-      });
-    }
-  }, [packingCount, selectedClass, selectedTheme]);
+  const handleUpdateRow = (themeValue: PackingTheme, field: keyof PackingRow, value: string) => {
+    setPackingRows((prev) =>
+      prev.map((row) => (row.theme === themeValue ? { ...row, [field]: value } : row))
+    );
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSaveStatus = async () => {
     try {
       await updateStatusMutation.mutateAsync({
         schoolId,
-        kitCount: BigInt(formData.kitCount || 0),
-        addOnCount: BigInt(formData.addOnCount || 0),
-        packed: formData.packed,
-        dispatched: formData.dispatched,
-        dispatchDetails: formData.dispatchDetails || null,
-        currentTheme: formData.currentTheme,
+        kitCount: BigInt(kitCount || 0),
+        addOnCount: BigInt(addOnCount || 0),
+        packed,
+        dispatched,
+        dispatchDetails: dispatchDetails || null,
+        currentTheme,
       });
       toast.success('Packing status updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update packing status');
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 
-  const handleSaveCounts = async () => {
-    const total = parseInt(countsData.totalCount || '0');
-    const packed = parseInt(countsData.packedCount || '0');
-    const addOn = parseInt(countsData.addOnCount || '0');
-
-    if (total < 0 || packed < 0 || addOn < 0) {
-      toast.error('Counts cannot be negative');
-      return;
-    }
-
+  const handleSaveTable = async () => {
     try {
-      await updateCountMutation.mutateAsync({
-        schoolId,
-        pClass: backendClass,
-        theme: backendTheme,
-        totalCount: BigInt(total),
-        packedCount: BigInt(packed),
-        addOnCount: BigInt(addOn),
-      });
-      toast.success('Counts updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update counts');
+      // Save all rows
+      for (const row of packingRows) {
+        // Save for each class
+        for (const classItem of CLASSES) {
+          const countValue = row[classItem.label.toLowerCase() as keyof PackingRow] as string;
+          if (countValue) {
+            await updateCountMutation.mutateAsync({
+              schoolId,
+              pClass: classItem.value,
+              theme: row.theme,
+              totalCount: BigInt(countValue || 0),
+              packedCount: BigInt(0),
+              addOnCount: BigInt(0),
+            });
+          }
+        }
+      }
+      toast.success('Packing counts saved successfully');
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 
-  if (schoolLoading || statusLoading) {
+  if (schoolLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   if (!school) {
-    return <div>School not found</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/packing/schools' })}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">School Not Found</h1>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/packing/dashboard' })}>
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/packing/schools' })}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
+        <h1 className="text-3xl font-bold">{school.name}</h1>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Packing - {school.name}</h1>
-        <p className="text-muted-foreground mt-1">Manage packing and dispatch status</p>
-      </div>
-
-      {/* School Details (Read-only) */}
+      {/* School Details */}
       <Card>
         <CardHeader>
-          <CardTitle>School Details</CardTitle>
-          <CardDescription>Selected school information</CardDescription>
+          <CardTitle>School Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label className="text-muted-foreground">School Name</Label>
-              <p className="font-medium">{school.name}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">School ID</Label>
-              <p className="font-medium font-mono">{school.id}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Address</Label>
-              <p className="font-medium">{school.address}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">City / State</Label>
-              <p className="font-medium">{school.city}, {school.state}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Contact Person</Label>
-              <p className="font-medium">{school.contactPerson}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Contact Number</Label>
-              <p className="font-medium">{school.contactNumber}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Student Count</Label>
-              <p className="font-medium">{Number(school.studentCount)}</p>
-            </div>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-sm font-medium">School ID</p>
+            <p className="text-sm text-muted-foreground">{school.id}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">City</p>
+            <p className="text-sm text-muted-foreground">{school.city}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Shipping Address</p>
+            <p className="text-sm text-muted-foreground">{school.shippingAddress}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Product</p>
+            <p className="text-sm text-muted-foreground">{school.product}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Packing Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Packing Status</CardTitle>
-          <CardDescription>Update kit counts, packing, and dispatch information</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="kitCount">Kit Count</Label>
-                <Input
-                  id="kitCount"
-                  type="number"
-                  value={formData.kitCount}
-                  onChange={(e) => setFormData({ ...formData, kitCount: e.target.value })}
-                  min="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addOnCount">Add-On Count</Label>
-                <Input
-                  id="addOnCount"
-                  type="number"
-                  value={formData.addOnCount}
-                  onChange={(e) => setFormData({ ...formData, addOnCount: e.target.value })}
-                  min="0"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="currentTheme">Current Theme</Label>
-                <Input
-                  id="currentTheme"
-                  value={formData.currentTheme}
-                  onChange={(e) => setFormData({ ...formData, currentTheme: e.target.value })}
-                />
-              </div>
-              <div className="space-y-4 md:col-span-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="packed"
-                    checked={formData.packed}
-                    onCheckedChange={(checked) => setFormData({ ...formData, packed: checked as boolean })}
-                  />
-                  <Label htmlFor="packed" className="cursor-pointer">
-                    Packed
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="dispatched"
-                    checked={formData.dispatched}
-                    onCheckedChange={(checked) => setFormData({ ...formData, dispatched: checked as boolean })}
-                  />
-                  <Label htmlFor="dispatched" className="cursor-pointer">
-                    Dispatched
-                  </Label>
-                </div>
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="dispatchDetails">Dispatch Details</Label>
-                <Textarea
-                  id="dispatchDetails"
-                  value={formData.dispatchDetails}
-                  onChange={(e) => setFormData({ ...formData, dispatchDetails: e.target.value })}
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <Button type="submit" disabled={updateStatusMutation.isPending}>
-              {updateStatusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Packing Status
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Class and Theme Selection with Counts */}
+      {/* Counts by Class and Theme */}
       <Card>
         <CardHeader>
           <CardTitle>Counts by Class and Theme</CardTitle>
-          <CardDescription>Select class and theme to manage counts</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="dispatchDetails">Dispatch Details</Label>
+            <Textarea
+              id="dispatchDetails"
+              value={dispatchDetails}
+              onChange={(e) => setDispatchDetails(e.target.value)}
+              rows={3}
+              placeholder="Enter dispatch details..."
+            />
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Theme</TableHead>
+                  <TableHead>Toddler</TableHead>
+                  <TableHead>Beginner</TableHead>
+                  <TableHead>Explorer</TableHead>
+                  <TableHead>Master</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {packingRows.map((row) => (
+                  <TableRow key={row.theme}>
+                    <TableCell className="font-medium">{row.themeLabel}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={row.toddler}
+                        onChange={(e) => handleUpdateRow(row.theme, 'toddler', e.target.value)}
+                        className="w-20"
+                        min="0"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={row.beginner}
+                        onChange={(e) => handleUpdateRow(row.theme, 'beginner', e.target.value)}
+                        className="w-20"
+                        min="0"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={row.explorer}
+                        onChange={(e) => handleUpdateRow(row.theme, 'explorer', e.target.value)}
+                        className="w-20"
+                        min="0"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={row.master}
+                        onChange={(e) => handleUpdateRow(row.theme, 'master', e.target.value)}
+                        className="w-20"
+                        min="0"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.product}
+                        onChange={(e) => handleUpdateRow(row.theme, 'product', e.target.value)}
+                        className="w-32"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.details}
+                        onChange={(e) => handleUpdateRow(row.theme, 'details', e.target.value)}
+                        className="w-40"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="class">Class</Label>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger 
-                  id="class"
-                  className="bg-white dark:bg-card"
-                >
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-popover">
-                  {PACKING_CLASSES.map((cls) => (
-                    <SelectItem 
-                      key={cls.value} 
-                      value={cls.value}
-                      className="hover:bg-[#e73d4b] hover:text-white focus:bg-[#e73d4b] focus:text-white"
-                    >
-                      {cls.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="kitCount">Kit Count</Label>
+              <Input
+                id="kitCount"
+                type="number"
+                value={kitCount}
+                onChange={(e) => setKitCount(e.target.value)}
+                min="0"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="theme">Theme</Label>
-              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                <SelectTrigger 
-                  id="theme"
-                  className="bg-white dark:bg-card"
-                >
-                  <SelectValue placeholder="Select theme" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-popover">
-                  {PACKING_THEMES.map((theme) => (
-                    <SelectItem 
-                      key={theme.value} 
-                      value={theme.value}
-                      className="hover:bg-[#e73d4b] hover:text-white focus:bg-[#e73d4b] focus:text-white"
-                    >
-                      {theme.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="addOnCount">Add-On Count</Label>
+              <Input
+                id="addOnCount"
+                type="number"
+                value={addOnCount}
+                onChange={(e) => setAddOnCount(e.target.value)}
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currentTheme">Current Theme</Label>
+              <Input
+                id="currentTheme"
+                value={currentTheme}
+                onChange={(e) => setCurrentTheme(e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="totalCount">Total Count</Label>
-              <Input
-                id="totalCount"
-                type="number"
-                value={countsData.totalCount}
-                onChange={(e) => setCountsData({ ...countsData, totalCount: e.target.value })}
-                min="0"
-              />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="packed" checked={packed} onCheckedChange={(checked) => setPacked(checked === true)} />
+              <Label htmlFor="packed" className="cursor-pointer">
+                Packed
+              </Label>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="packedCount">Packed Count</Label>
-              <Input
-                id="packedCount"
-                type="number"
-                value={countsData.packedCount}
-                onChange={(e) => setCountsData({ ...countsData, packedCount: e.target.value })}
-                min="0"
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="dispatched"
+                checked={dispatched}
+                onCheckedChange={(checked) => setDispatched(checked === true)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="addOnCountDetail">Add-On Count</Label>
-              <Input
-                id="addOnCountDetail"
-                type="number"
-                value={countsData.addOnCount}
-                onChange={(e) => setCountsData({ ...countsData, addOnCount: e.target.value })}
-                min="0"
-              />
+              <Label htmlFor="dispatched" className="cursor-pointer">
+                Dispatched
+              </Label>
             </div>
           </div>
 
-          <Button onClick={handleSaveCounts} disabled={updateCountMutation.isPending}>
-            {updateCountMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Counts
-          </Button>
+          <div className="flex gap-4">
+            <Button onClick={handleSaveStatus} disabled={updateStatusMutation.isPending}>
+              {updateStatusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Status
+            </Button>
+            <Button onClick={handleSaveTable} disabled={updateCountMutation.isPending} variant="outline">
+              {updateCountMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Table Data
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

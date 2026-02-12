@@ -1,63 +1,92 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Move Register School to Admin navigation and make Marketing school details view-only",
+  "title": "Fix blank screen by correcting routing/auth gating, QueryClient wiring, and global error fallback",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Move the “Register School” navigation item from Marketing to Admin in both header and any role-based sidebar nav.",
+      "summary": "Ensure the app always renders a visible UI at \"/\" and on protected routes (loading/login/error), avoiding blank screens.",
       "acceptanceCriteria": [
-        "When logged in as Admin, the header navigation includes a “Register School” item that navigates to the school registration form.",
-        "When logged in as Marketing, no “Register School” item is present in the header navigation.",
-        "When logged in as Marketing, no “Register School” item is present in the role-based sidebar navigation (if used)."
+        "Opening the deployed app at \"/\" shows either the Login page or a loading indicator within 1 second; it must not remain a blank white screen.",
+        "If the user is not authenticated and demo mode is not active, navigating to any protected route (e.g. \"/admin/dashboard\") reliably redirects to \"/login\" (or displays a clear unauthenticated screen) instead of rendering nothing.",
+        "If demo mode is active, the app navigates to the correct demo dashboard route and renders the layout/content (not blank)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
-          "operation": "modify",
-          "description": "Update the role-based header navigation so Admin includes “Register School” (pointing to the new admin route) and Marketing no longer includes it. Use the authorization component’s role-based access concept (via the fetched user profile role) to drive which items render. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/IndexGatePage.tsx",
+          "operation": "create",
+          "description": "Create a minimal route component for \"/\" that always renders a visible state immediately (spinner/placeholder), then performs deterministic navigation: demo session -> demo dashboard; otherwise if not authenticated/profile missing -> navigate to \"/login\"; otherwise -> role dashboard. Use the authorization component guidance for authenticated-vs-guest UI expectations and cache-clearing behavior where applicable. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/layout/RoleNav.tsx",
+          "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Update role-based sidebar navigation items so Admin includes “Register School” (pointing to the new admin route) and Marketing no longer includes it. Use the authorization component’s role-based access concept (via staff role) to determine visibility. Verify the component's usage instructions before implementing."
+          "description": "Wire \"/\" to render IndexGatePage (component-based gating) so the route always paints UI while routing decisions occur. Ensure protected routes are nested under the authenticated layout so unauthenticated users see a redirect/fallback rather than nothing."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Move the school registration route under an Admin path and prevent Marketing from accessing it, redirecting old Marketing URLs to the Marketing dashboard.",
+      "summary": "Refactor routeTree auth gating to remove React Query profile fetching in beforeLoad; keep only demo-mode routing in beforeLoad and move non-demo checks into UI components.",
       "acceptanceCriteria": [
-        "Admin users can open the registration form from the Admin navigation and successfully reach the registration page.",
-        "Marketing users cannot reach the registration form via direct URL to the previous Marketing registration route; they are redirected to the Marketing dashboard (or another authorized page).",
-        "No broken links remain in the Marketing UI after removing the register option."
+        "frontend/src/routeTree.tsx no longer calls queryClient.ensureQueryData(getCallerUserProfileQuery()) in beforeLoad for \"/\" and the authenticated route gate.",
+        "When not in demo mode, visiting \"/\" results in a deterministic UI path (loading -> redirect/login) without route-load deadlocks.",
+        "Demo mode routing at \"/\" still redirects to the demo dashboard returned by getDashboardRoute(getDemoRole())."
       ],
       "file_operations": [
         {
           "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Register a new admin-only route for the school registration page under /admin/... and add a guard that redirects non-admin (including Marketing) to an authorized page (e.g., Marketing dashboard). Also keep the previous /marketing/... registration path as a redirect route that sends Marketing to their dashboard and Admin to the new admin registration route. Use the authorization component’s role-based access concept (profile role) for the route guards. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/marketing/SchoolCreatePage.tsx",
-          "operation": "modify",
-          "description": "Ensure the registration page behavior aligns with admin-only routing: update any internal navigation (e.g., post-submit and cancel flows) to route users to appropriate admin pages when accessed via the new /admin/... route, and avoid assumptions that this page is Marketing-only. Use the authorization component’s role-based access concept (caller profile role) to decide safe navigation targets. Verify the component's usage instructions before implementing."
+          "description": "Remove queryClient.ensureQueryData(getCallerUserProfileQuery()) usage from both the authenticated route beforeLoad and the index route beforeLoad. Keep only demo-session decisions in beforeLoad (e.g., demo role -> redirect to getDashboardRoute(getDemoRole())). Shift non-demo auth/profile decisions to IndexGatePage and AppLayout (where hooks are valid)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Make Marketing view-only on the School Details page by removing Edit actions and keeping fields read-only for Marketing.",
+      "summary": "Prevent AppLayout from returning null when profile is missing; render a safe fallback and navigate to \"/login\" when appropriate (non-demo).",
       "acceptanceCriteria": [
-        "When logged in as Marketing and viewing a school’s details, there is no visible “Edit” button and no edit/save/cancel controls are available.",
-        "When logged in as Marketing, all school detail inputs remain disabled/read-only.",
-        "When logged in as Admin, the existing edit workflow on the School Details page continues to work as before."
+        "If profileLoading is false and profile is null/undefined while not in demo mode, AppLayout triggers navigation to \"/login\" and shows a minimal loading/fallback view until navigation completes.",
+        "The authenticated layout never returns null in a way that results in a blank page."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/schools/SchoolDetailsPage.tsx",
+          "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Update role checks so only Admin can enter edit mode and see Edit/Save/Cancel controls; Marketing must always remain in view-only mode with inputs disabled. Use the authorization component’s role-based access concept (caller profile role) to control edit capability. Verify the component's usage instructions before implementing."
+          "description": "Update AppLayout to never return null. If demo mode is active, derive/render a demo profile (e.g., via existing demo profile utilities) so navigation/header/content renders. If not demo and profile is missing (or identity is absent), render a minimal fallback (spinner + English message) and navigate to \"/login\". Use the authorization component guidance for unauthenticated/guest handling and for clearing cached data on logout. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Use a single React Query QueryClient instance across React Query provider and TanStack Router context.",
+      "acceptanceCriteria": [
+        "There is exactly one QueryClient instance created for the app runtime and it is used by both <QueryClientProvider> and the router context.",
+        "After the change, navigation and data fetching (including demo mode) works without a blank screen regression."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Remove the extra QueryClient creation in App.tsx and instead obtain the existing QueryClient from React Query context (e.g., via a hook) and pass it into the TanStack Router context at runtime. Ensure the router provider receives a context containing that single QueryClient instance so route loaders/components share the same cache."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add a global client-side error fallback so uncaught errors render a visible error panel with a \"Go to Login\" action.",
+      "acceptanceCriteria": [
+        "If an uncaught error happens during initial render, the app displays an error view with readable text in English and a button/link that navigates to \"/login\".",
+        "The error fallback is styled consistently with the existing Tailwind/Shadcn UI components."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/error/GlobalErrorBoundary.tsx",
+          "operation": "create",
+          "description": "Add a global React error boundary component that catches render/runtime errors and displays a user-visible English error panel plus a \"Go to Login\" action. Use shadcn-ui components (e.g., Button/Card/Alert if available) for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wrap the app's router rendering with GlobalErrorBoundary so uncaught render/runtime errors show the fallback UI instead of a blank screen. Ensure the fallback can navigate to \"/login\" (via router navigation or a link) without relying on forbidden/immutable files."
         }
       ]
     }

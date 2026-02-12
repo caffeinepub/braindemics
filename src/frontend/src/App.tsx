@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { routeTree } from './routeTree';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
+import GlobalErrorBoundary from './components/error/GlobalErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,9 +30,13 @@ declare module '@tanstack/react-router' {
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <RouterProvider router={router} />
-      <Toaster />
-    </ThemeProvider>
+    <GlobalErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} context={{ queryClient }} />
+          <Toaster />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </GlobalErrorBoundary>
   );
 }

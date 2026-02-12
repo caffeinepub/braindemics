@@ -96,6 +96,12 @@ export interface PackingStatus {
     createdTimestamp: bigint;
     packed: boolean;
 }
+export interface Notification {
+    id: string;
+    content: string;
+    isRead: boolean;
+    timestamp: bigint;
+}
 export interface School {
     id: string;
     city: string;
@@ -107,8 +113,10 @@ export interface School {
     lastUpdateTimestamp: bigint;
     address: string;
     createdTimestamp: bigint;
+    shippingAddress: string;
     contactNumber: string;
     studentCount: bigint;
+    product: string;
 }
 export interface ConsolidatedSchoolModuleData {
     school: School;
@@ -164,7 +172,7 @@ export interface backendInterface {
     createAcademicQuery(schoolId: string, queries: string): Promise<string>;
     createOrUpdatePackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme, totalCount: bigint, packedCount: bigint, addOnCount: bigint): Promise<void>;
     createOrUpdatePackingStatus(schoolId: string, kitCount: bigint, addOnCount: bigint, packed: boolean, dispatched: boolean, dispatchDetails: string | null, currentTheme: string): Promise<void>;
-    createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
+    createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint, shippingAddress: string, product: string): Promise<void>;
     createStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     createTrainingVisit(schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<string>;
     getAcademicQueriesBySchoolWithMetadata(schoolId: string): Promise<Array<AcademicQueryExtended>>;
@@ -174,6 +182,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getConsolidatedSchoolDetails(schoolId: string): Promise<ConsolidatedSchoolModuleData | null>;
     getFilteredAuditLogs(criteria: FilterCriteria): Promise<Array<AuditLog>>;
+    getNotifications(): Promise<Array<Notification>>;
     getOutstandingAmount(schoolId: string): Promise<bigint>;
     getOutstandingAmountsBySchoolIds(schoolIds: Array<string>): Promise<Array<[string, bigint]>>;
     getPackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme): Promise<PackingCount>;
@@ -192,11 +201,13 @@ export interface backendInterface {
     listAllSchools(): Promise<Array<School>>;
     listAllStaff(): Promise<Array<StaffProfile>>;
     listTrainingVisitsBySchool(schoolId: string): Promise<Array<TrainingVisit>>;
+    markAllNotificationsAsRead(): Promise<void>;
+    markNotificationAsRead(notificationId: string): Promise<void>;
     repairStaffProfilePermissions(): Promise<bigint>;
     respondToAcademicQuery(id: string, response: string, status: Variant_resolved_open): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setOutstandingAmount(schoolId: string, amount: bigint): Promise<void>;
-    updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
+    updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint, shippingAddress: string, product: string): Promise<void>;
     updateStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     updateTrainingVisit(id: string, schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<void>;
 }

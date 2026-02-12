@@ -1,157 +1,191 @@
-import { useState } from 'react';
-import { useParams } from '@tanstack/react-router';
-import { useGetSchool, useGetOutstandingAmount, useSetOutstandingAmount } from '../../hooks/useQueries';
+import { useParams, useNavigate } from '@tanstack/react-router';
+import { useGetSchool, useGetPackingStatus, useGetPackingCountsBySchool, useListAcademicQueriesBySchool } from '../../hooks/useQueries';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, DollarSign } from 'lucide-react';
-import { toast } from 'sonner';
-import { isDemoActive } from '../../demo/demoSession';
-import { getErrorMessage } from '../../utils/getErrorMessage';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowLeft } from 'lucide-react';
 
 export default function SchoolPaymentsPage() {
   const { schoolId } = useParams({ from: '/authenticated/accounts/schools/$schoolId/payments' });
+  const navigate = useNavigate();
   const { data: school, isLoading: schoolLoading } = useGetSchool(schoolId);
-  const { data: outstandingAmount, isLoading: outstandingLoading } = useGetOutstandingAmount(schoolId);
-  const setOutstandingMutation = useSetOutstandingAmount();
+  const { data: packingStatus } = useGetPackingStatus(schoolId);
+  const { data: packingCounts = [] } = useGetPackingCountsBySchool(schoolId);
+  const { data: queries = [] } = useListAcademicQueriesBySchool(schoolId);
 
-  const [editingOutstanding, setEditingOutstanding] = useState(false);
-  const [outstandingInput, setOutstandingInput] = useState('');
-
-  const isDemo = isDemoActive();
-
-  const handleEditOutstanding = () => {
-    setOutstandingInput(outstandingAmount ? outstandingAmount.toString() : '0');
-    setEditingOutstanding(true);
-  };
-
-  const handleSaveOutstanding = async () => {
-    try {
-      const amount = BigInt(outstandingInput || '0');
-      await setOutstandingMutation.mutateAsync({ schoolId, amount });
-      toast.success('Outstanding amount updated successfully');
-      setEditingOutstanding(false);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  if (schoolLoading || outstandingLoading) {
+  if (schoolLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   if (!school) {
-    return <div>School not found</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/accounts/dashboard' })}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">School Not Found</h1>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Payments - {school.name}</h1>
-        <p className="text-muted-foreground mt-1">Manage payments and outstanding amounts</p>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/accounts/dashboard' })}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <h1 className="text-3xl font-bold">{school.name}</h1>
       </div>
 
       {/* School Details */}
       <Card>
         <CardHeader>
-          <CardTitle>School Details</CardTitle>
-          <CardDescription>Selected school information</CardDescription>
+          <CardTitle>School Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label className="text-muted-foreground">School Name</Label>
-              <p className="font-medium">{school.name}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">School ID</Label>
-              <p className="font-medium font-mono">{school.id}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Address</Label>
-              <p className="font-medium">{school.address}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">City / State</Label>
-              <p className="font-medium">{school.city}, {school.state}</p>
-            </div>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-sm font-medium">School ID</p>
+            <p className="text-sm text-muted-foreground">{school.id}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">City</p>
+            <p className="text-sm text-muted-foreground">{school.city}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Shipping Address</p>
+            <p className="text-sm text-muted-foreground">{school.shippingAddress}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Product</p>
+            <p className="text-sm text-muted-foreground">{school.product}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Outstanding Amount */}
+      {/* Packing Details (Read-only) */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Outstanding Amount
-          </CardTitle>
-          <CardDescription>View and manage outstanding payment amount for this school</CardDescription>
+          <CardTitle>Packing Details</CardTitle>
         </CardHeader>
         <CardContent>
-          {editingOutstanding ? (
+          {packingStatus ? (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="outstanding">Outstanding Amount (₹)</Label>
-                <Input
-                  id="outstanding"
-                  type="number"
-                  value={outstandingInput}
-                  onChange={(e) => setOutstandingInput(e.target.value)}
-                  min="0"
-                  placeholder="Enter amount"
-                />
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <p className="text-sm font-medium">Kit Count</p>
+                  <p className="text-sm text-muted-foreground">{packingStatus.kitCount.toString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Add-On Count</p>
+                  <p className="text-sm text-muted-foreground">{packingStatus.addOnCount.toString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Current Theme</p>
+                  <p className="text-sm text-muted-foreground">{packingStatus.currentTheme}</p>
+                </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveOutstanding}
-                  disabled={setOutstandingMutation.isPending}
-                >
-                  {setOutstandingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingOutstanding(false)}
-                  disabled={setOutstandingMutation.isPending}
-                >
-                  Cancel
-                </Button>
+                <Badge variant={packingStatus.packed ? 'default' : 'secondary'}>
+                  {packingStatus.packed ? 'Packed' : 'Not Packed'}
+                </Badge>
+                <Badge variant={packingStatus.dispatched ? 'default' : 'secondary'}>
+                  {packingStatus.dispatched ? 'Dispatched' : 'Not Dispatched'}
+                </Badge>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Current Outstanding</Label>
-                <p className="text-2xl font-bold">
-                  ₹{outstandingAmount ? Number(outstandingAmount).toLocaleString() : '0'}
-                </p>
-              </div>
-              <Button onClick={handleEditOutstanding}>
-                Update Outstanding Amount
-              </Button>
-            </div>
+            <p className="text-sm text-muted-foreground">No packing details available</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Payment History Placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment History</CardTitle>
-          <CardDescription>View payment records for this school</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground py-8">
-            {isDemo ? 'Payment history is not available in Demo/Preview Mode' : 'No payment records yet'}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Dispatch Details (Read-only) */}
+      {packingStatus?.dispatchDetails && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dispatch Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{packingStatus.dispatchDetails}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Packing Counts (Read-only) */}
+      {packingCounts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Packing Counts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Theme</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Packed</TableHead>
+                  <TableHead>Add-On</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {packingCounts.map((count, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{count.classType}</TableCell>
+                    <TableCell>{count.theme}</TableCell>
+                    <TableCell>{count.totalCount.toString()}</TableCell>
+                    <TableCell>{count.packedCount.toString()}</TableCell>
+                    <TableCell>{count.addOnCount.toString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* School Queries (Read-only) */}
+      {queries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>School Queries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {queries.map((query) => (
+                <div key={query.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={query.status === 'open' ? 'destructive' : 'default'}>
+                      {query.status === 'open' ? 'Open' : 'Resolved'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Query</p>
+                    <p className="text-sm text-muted-foreground">{query.queries}</p>
+                  </div>
+                  {query.response && (
+                    <div>
+                      <p className="text-sm font-medium">Response</p>
+                      <p className="text-sm text-muted-foreground">{query.response}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

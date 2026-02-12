@@ -178,6 +178,12 @@ export interface PackingStatus {
     createdTimestamp: bigint;
     packed: boolean;
 }
+export interface Notification {
+    id: string;
+    content: string;
+    isRead: boolean;
+    timestamp: bigint;
+}
 export interface School {
     id: string;
     city: string;
@@ -189,8 +195,10 @@ export interface School {
     lastUpdateTimestamp: bigint;
     address: string;
     createdTimestamp: bigint;
+    shippingAddress: string;
     contactNumber: string;
     studentCount: bigint;
+    product: string;
 }
 export interface ConsolidatedSchoolModuleData {
     school: School;
@@ -257,7 +265,7 @@ export interface backendInterface {
     createAcademicQuery(schoolId: string, queries: string): Promise<string>;
     createOrUpdatePackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme, totalCount: bigint, packedCount: bigint, addOnCount: bigint): Promise<void>;
     createOrUpdatePackingStatus(schoolId: string, kitCount: bigint, addOnCount: bigint, packed: boolean, dispatched: boolean, dispatchDetails: string | null, currentTheme: string): Promise<void>;
-    createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
+    createSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint, shippingAddress: string, product: string): Promise<void>;
     createStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     createTrainingVisit(schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<string>;
     getAcademicQueriesBySchoolWithMetadata(schoolId: string): Promise<Array<AcademicQueryExtended>>;
@@ -267,6 +275,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getConsolidatedSchoolDetails(schoolId: string): Promise<ConsolidatedSchoolModuleData | null>;
     getFilteredAuditLogs(criteria: FilterCriteria): Promise<Array<AuditLog>>;
+    getNotifications(): Promise<Array<Notification>>;
     getOutstandingAmount(schoolId: string): Promise<bigint>;
     getOutstandingAmountsBySchoolIds(schoolIds: Array<string>): Promise<Array<[string, bigint]>>;
     getPackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme): Promise<PackingCount>;
@@ -285,11 +294,13 @@ export interface backendInterface {
     listAllSchools(): Promise<Array<School>>;
     listAllStaff(): Promise<Array<StaffProfile>>;
     listTrainingVisitsBySchool(schoolId: string): Promise<Array<TrainingVisit>>;
+    markAllNotificationsAsRead(): Promise<void>;
+    markNotificationAsRead(notificationId: string): Promise<void>;
     repairStaffProfilePermissions(): Promise<bigint>;
     respondToAcademicQuery(id: string, response: string, status: Variant_resolved_open): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setOutstandingAmount(schoolId: string, amount: bigint): Promise<void>;
-    updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint): Promise<void>;
+    updateSchool(id: string, name: string, address: string, city: string, state: string, contactPerson: string, contactNumber: string, email: string, website: string | null, studentCount: bigint, shippingAddress: string, product: string): Promise<void>;
     updateStaffProfile(principal: Principal, fullName: string, role: StaffRole, department: string, contactNumber: string, email: string): Promise<void>;
     updateTrainingVisit(id: string, schoolId: string, visitDate: bigint, reason: string, visitingPerson: string, contactPersonMobile: string, observations: string, classroomObservationProof: ExternalBlob | null): Promise<void>;
 }
@@ -450,17 +461,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createSchool(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string | null, arg9: bigint): Promise<void> {
+    async createSchool(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string | null, arg9: bigint, arg10: string, arg11: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.createSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9);
+                const result = await this.actor.createSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9, arg10, arg11);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9);
+            const result = await this.actor.createSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9, arg10, arg11);
             return result;
         }
     }
@@ -587,6 +598,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getFilteredAuditLogs(to_candid_FilterCriteria_n61(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
+    async getNotifications(): Promise<Array<Notification>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getNotifications();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getNotifications();
             return result;
         }
     }
@@ -842,6 +867,34 @@ export class Backend implements backendInterface {
             return from_candid_vec_n51(this._uploadFile, this._downloadFile, result);
         }
     }
+    async markAllNotificationsAsRead(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markAllNotificationsAsRead();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markAllNotificationsAsRead();
+            return result;
+        }
+    }
+    async markNotificationAsRead(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markNotificationAsRead(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markNotificationAsRead(arg0);
+            return result;
+        }
+    }
     async repairStaffProfilePermissions(): Promise<bigint> {
         if (this.processError) {
             try {
@@ -898,17 +951,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateSchool(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string | null, arg9: bigint): Promise<void> {
+    async updateSchool(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string | null, arg9: bigint, arg10: string, arg11: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9);
+                const result = await this.actor.updateSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9, arg10, arg11);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9);
+            const result = await this.actor.updateSchool(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, to_candid_opt_n14(this._uploadFile, this._downloadFile, arg8), arg9, arg10, arg11);
             return result;
         }
     }
@@ -1149,8 +1202,10 @@ function from_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uin
     lastUpdateTimestamp: bigint;
     address: string;
     createdTimestamp: bigint;
+    shippingAddress: string;
     contactNumber: string;
     studentCount: bigint;
+    product: string;
 }): {
     id: string;
     city: string;
@@ -1162,8 +1217,10 @@ function from_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uin
     lastUpdateTimestamp: bigint;
     address: string;
     createdTimestamp: bigint;
+    shippingAddress: string;
     contactNumber: string;
     studentCount: bigint;
+    product: string;
 } {
     return {
         id: value.id,
@@ -1176,8 +1233,10 @@ function from_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uin
         lastUpdateTimestamp: value.lastUpdateTimestamp,
         address: value.address,
         createdTimestamp: value.createdTimestamp,
+        shippingAddress: value.shippingAddress,
         contactNumber: value.contactNumber,
-        studentCount: value.studentCount
+        studentCount: value.studentCount,
+        product: value.product
     };
 }
 function from_candid_record_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

@@ -1,61 +1,56 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Role-based UI update: move the \"Register New School\" navigation item from the Marketing Dashboard to the Admin Dashboard, and restrict Marketing users to view-only access for school details (remove Register and Edit actions).",
-  "architectural_notes": [
-    "Enforce role-based access in UI: Admin can register schools; Marketing is view-only (no register/edit actions)."
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Deployed site renders as blank white screen (no loading spinner, no console errors) after recent changes; user requests working demo via rebuild/redeploy."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-move-the-register-school-navigation-entry-from-the-marketing-ui-to-the-admin-ui-so-that-admin-users-see-a-register-school-item-in-the-top-navigation-header-next-to-the-existing-admin-items-and-marketing-users-no-longer-see-any-register-school-navigation-entry",
-      "title": "Move the “Register School” navigation entry from the Marketing UI to the Admin UI so that Admin users see a “Register School” item in the top navigation (header) next to the existing Admin items, and Marketing users no longer see any “Register School” navigation entry.",
+      "id": "feature-eliminate-the-blank-white-screen-on-the-deployed-site-by-ensuring-the-app-always-renders-a-visible-ui-state-login-screen-loading-state-or-error-state-at-route-and-protected-routes",
+      "title": "Eliminate the blank white screen on the deployed site by ensuring the app always renders a visible UI state (login screen, loading state, or error state) at route \"/\" and protected routes.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-routing-so-the-school-registration-page-is-accessible-from-an-admin-route-e-g-under-admin-and-is-not-accessible-to-marketing-users-if-a-marketing-user-attempts-to-access-the-old-marketing-registration-route-directly-redirect-them-to-the-marketing-dashboard-or-an-authorized-page",
-      "title": "Update routing so the school registration page is accessible from an Admin route (e.g., under /admin/...) and is not accessible to Marketing users. If a Marketing user attempts to access the old Marketing registration route directly, redirect them to the Marketing dashboard (or an authorized page).",
+      "id": "feature-refactor-route-level-authentication-logic-in-frontend-src-routetree-tsx-to-avoid-fetching-the-caller-profile-via-react-query-during-route-beforeload-remove-reliance-on-getcalleruserprofilequery-ensurequerydata-there-and-instead-perform-only-demo-session-routing-decisions-in-beforeload-perform-non-demo-auth-profile-checks-in-ui-components-where-hooks-are-valid",
+      "title": "Refactor route-level authentication logic in frontend/src/routeTree.tsx to avoid fetching the caller profile via React Query during route beforeLoad (remove reliance on getCallerUserProfileQuery/ensureQueryData there), and instead perform only demo-session routing decisions in beforeLoad; perform non-demo auth/profile checks in UI components where hooks are valid.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-restrict-marketing-to-view-only-access-on-the-school-details-page-by-removing-the-edit-action-for-marketing-users-and-ensuring-the-form-fields-remain-read-only-for-them",
-      "title": "Restrict Marketing to view-only access on the School Details page by removing the Edit action for Marketing users and ensuring the form fields remain read-only for them.",
+      "id": "feature-update-frontend-src-components-layout-applayout-tsx-so-that-when-profile-is-missing-and-demo-mode-is-not-active-it-renders-a-safe-fallback-that-navigates-to-login-and-or-shows-an-inline-message-rather-than-returning-null",
+      "title": "Update frontend/src/components/layout/AppLayout.tsx so that when profile is missing (and demo mode is not active), it renders a safe fallback that navigates to \"/login\" (and/or shows an inline message) rather than returning null.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Move \"Register New School\" option from Marketing Dashboard to Admin Dashboard navigation (next to existing nav items)",
-      "reqIds": [],
-      "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Restrict Marketing role to view-only for school details by removing Register and Edit options from Marketing UI",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Enforce backend authorization so Marketing users cannot create new schools or update school details via API calls, even if they attempt to bypass the UI; Admin users must retain these capabilities.",
+      "id": "feature-use-a-single-react-query-queryclient-instance-consistently-for-both-the-react-query-provider-and-the-tanstack-router-context-avoid-creating-multiple-queryclient-instances-across-frontend-src-main-tsx-and-frontend-src-app-tsx",
+      "title": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
       "reqIds": [
         "REQ-4"
       ],
-      "status": "pending"
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-simple-global-client-side-error-fallback-so-that-unexpected-render-runtime-errors-show-a-user-visible-error-panel-with-a-go-to-login-action-instead-of-a-blank-white-screen",
+      "title": "Add a simple global client-side error fallback so that unexpected render/runtime errors show a user-visible error panel with a \"Go to Login\" action instead of a blank white screen.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Move “Register School” to Admin navigation and make Marketing view-only for schools",
+  "new_feature_requests": [],
+  "projectName": "Fix blank white screen by correcting routing/auth gating and QueryClient usage",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

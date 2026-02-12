@@ -96,8 +96,10 @@ export const School = IDL.Record({
   'lastUpdateTimestamp' : IDL.Int,
   'address' : IDL.Text,
   'createdTimestamp' : IDL.Int,
+  'shippingAddress' : IDL.Text,
   'contactNumber' : IDL.Text,
   'studentCount' : IDL.Nat,
+  'product' : IDL.Text,
 });
 export const PackingCount = IDL.Record({
   'theme' : PackingTheme,
@@ -153,6 +155,12 @@ export const FilterCriteria = IDL.Record({
   'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
   'filterEntityId' : IDL.Opt(IDL.Text),
   'filterInitiator' : IDL.Opt(IDL.Principal),
+});
+export const Notification = IDL.Record({
+  'id' : IDL.Text,
+  'content' : IDL.Text,
+  'isRead' : IDL.Bool,
+  'timestamp' : IDL.Int,
 });
 export const StaffProfile = IDL.Record({
   'principal' : IDL.Principal,
@@ -224,6 +232,8 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Opt(IDL.Text),
         IDL.Nat,
+        IDL.Text,
+        IDL.Text,
       ],
       [],
       [],
@@ -265,6 +275,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(AuditLog)],
       ['query'],
     ),
+  'getNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
   'getOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'getOutstandingAmountsBySchoolIds' : IDL.Func(
       [IDL.Vec(IDL.Text)],
@@ -307,6 +318,8 @@ export const idlService = IDL.Service({
       [IDL.Vec(TrainingVisit)],
       ['query'],
     ),
+  'markAllNotificationsAsRead' : IDL.Func([], [], []),
+  'markNotificationAsRead' : IDL.Func([IDL.Text], [], []),
   'repairStaffProfilePermissions' : IDL.Func([], [IDL.Nat], []),
   'respondToAcademicQuery' : IDL.Func(
       [
@@ -331,6 +344,8 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Opt(IDL.Text),
         IDL.Nat,
+        IDL.Text,
+        IDL.Text,
       ],
       [],
       [],
@@ -447,8 +462,10 @@ export const idlFactory = ({ IDL }) => {
     'lastUpdateTimestamp' : IDL.Int,
     'address' : IDL.Text,
     'createdTimestamp' : IDL.Int,
+    'shippingAddress' : IDL.Text,
     'contactNumber' : IDL.Text,
     'studentCount' : IDL.Nat,
+    'product' : IDL.Text,
   });
   const PackingCount = IDL.Record({
     'theme' : PackingTheme,
@@ -504,6 +521,12 @@ export const idlFactory = ({ IDL }) => {
     'filterDateRange' : IDL.Opt(IDL.Tuple(IDL.Int, IDL.Int)),
     'filterEntityId' : IDL.Opt(IDL.Text),
     'filterInitiator' : IDL.Opt(IDL.Principal),
+  });
+  const Notification = IDL.Record({
+    'id' : IDL.Text,
+    'content' : IDL.Text,
+    'isRead' : IDL.Bool,
+    'timestamp' : IDL.Int,
   });
   const StaffProfile = IDL.Record({
     'principal' : IDL.Principal,
@@ -575,6 +598,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Opt(IDL.Text),
           IDL.Nat,
+          IDL.Text,
+          IDL.Text,
         ],
         [],
         [],
@@ -616,6 +641,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(AuditLog)],
         ['query'],
       ),
+    'getNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
     'getOutstandingAmount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'getOutstandingAmountsBySchoolIds' : IDL.Func(
         [IDL.Vec(IDL.Text)],
@@ -666,6 +692,8 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(TrainingVisit)],
         ['query'],
       ),
+    'markAllNotificationsAsRead' : IDL.Func([], [], []),
+    'markNotificationAsRead' : IDL.Func([IDL.Text], [], []),
     'repairStaffProfilePermissions' : IDL.Func([], [IDL.Nat], []),
     'respondToAcademicQuery' : IDL.Func(
         [
@@ -690,6 +718,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Opt(IDL.Text),
           IDL.Nat,
+          IDL.Text,
+          IDL.Text,
         ],
         [],
         [],

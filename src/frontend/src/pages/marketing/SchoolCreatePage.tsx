@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffRole } from '../../backend';
 import { getErrorMessage } from '../../utils/getErrorMessage';
+
+const PRODUCT_OPTIONS = ['Toddler', 'Neo', 'Funtaskit', 'Braindemics'] as const;
 
 export default function SchoolCreatePage() {
   const navigate = useNavigate();
@@ -26,10 +30,17 @@ export default function SchoolCreatePage() {
     email: '',
     website: '',
     studentCount: '',
+    shippingAddress: '',
+    product: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.product) {
+      toast.error('Please select a product');
+      return;
+    }
 
     try {
       await createMutation.mutateAsync({
@@ -43,6 +54,8 @@ export default function SchoolCreatePage() {
         email: formData.email,
         website: formData.website || null,
         studentCount: BigInt(formData.studentCount || 0),
+        shippingAddress: formData.shippingAddress,
+        product: formData.product,
       });
       toast.success('School registered successfully');
       
@@ -118,6 +131,46 @@ export default function SchoolCreatePage() {
                   required
                 />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="shippingAddress">Shipping Address *</Label>
+                <Textarea
+                  id="shippingAddress"
+                  value={formData.shippingAddress}
+                  onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+                  required
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="product">Product *</Label>
+                <Select
+                  value={formData.product}
+                  onValueChange={(value) => setFormData({ ...formData, product: value })}
+                  required
+                >
+                  <SelectTrigger id="product">
+                    <SelectValue placeholder="Select a product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUCT_OPTIONS.map((product) => (
+                      <SelectItem key={product} value={product}>
+                        {product}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentCount">Student Count *</Label>
+                <Input
+                  id="studentCount"
+                  type="number"
+                  value={formData.studentCount}
+                  onChange={(e) => setFormData({ ...formData, studentCount: e.target.value })}
+                  required
+                  min="0"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Contact Person *</Label>
                 <Input
@@ -131,6 +184,7 @@ export default function SchoolCreatePage() {
                 <Label htmlFor="contactNumber">Contact Number *</Label>
                 <Input
                   id="contactNumber"
+                  type="tel"
                   value={formData.contactNumber}
                   onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                   required
@@ -155,36 +209,19 @@ export default function SchoolCreatePage() {
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="studentCount">Student Count *</Label>
-                <Input
-                  id="studentCount"
-                  type="number"
-                  value={formData.studentCount}
-                  onChange={(e) => setFormData({ ...formData, studentCount: e.target.value })}
-                  required
-                  min="0"
-                />
-              </div>
             </div>
 
             <div className="flex gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (profile?.role === StaffRole.admin) {
-                    navigate({ to: '/admin/dashboard' });
-                  } else {
-                    navigate({ to: '/marketing/dashboard' });
-                  }
-                }}
-              >
-                Cancel
-              </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Register School
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate({ to: profile?.role === StaffRole.admin ? '/admin/dashboard' : '/marketing/dashboard' })}
+              >
+                Cancel
               </Button>
             </div>
           </form>

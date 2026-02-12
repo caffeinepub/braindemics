@@ -1,115 +1,83 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, queryOptions } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { isDemoActive } from '../demo/demoSession';
+import {
+  getDemoSchools,
+  createDemoSchool,
+  updateDemoSchool,
+  getDemoOutstandingAmounts,
+  setDemoOutstandingAmount,
+  getDemoPackingStatuses,
+  createOrUpdateDemoPackingStatus,
+  getDemoPackingCounts,
+  createOrUpdateDemoPackingCount,
+  getDemoTrainingVisits,
+  createDemoTrainingVisit,
+  updateDemoTrainingVisit,
+  getDemoAcademicQueries,
+  createDemoAcademicQuery,
+  respondToDemoAcademicQuery,
+  getDemoPackingStatus,
+  getDemoPackingCountsBySchool,
+} from '../demo/demoDataStore';
+import { canPerformAction } from '../demo/demoGuards';
 import type {
   School,
   StaffProfile,
+  UserProfile,
   PackingStatus,
+  PackingCount,
   TrainingVisit,
   AcademicQuery,
   AuditLog,
   FilterCriteria,
-  UserProfile,
-  StaffRole,
-  Variant_resolved_open,
+  ConsolidatedSchoolModuleData,
   PackingClass,
   PackingTheme,
-  ConsolidatedSchoolModuleData,
+  Variant_resolved_open,
+  Notification,
 } from '../backend';
-import { ExternalBlob } from '../backend';
-import { Principal } from '@icp-sdk/core/principal';
-import { toast } from 'sonner';
-import { isDemoActive, getDemoRole } from '../demo/demoSession';
-import { createDemoProfile } from '../demo/demoProfile';
-import {
-  getDemoSchools,
-  saveDemoSchool,
-  getDemoSchool,
-  getDemoOutstanding,
-  setDemoOutstanding,
-  hasDemoOutstanding,
-  getDemoPackingStatus,
-  saveDemoPackingStatus,
-  getDemoPackingCount,
-  saveDemoPackingCount,
-  getDemoPackingCountsBySchool,
-  getAllDemoOutstanding,
-  getAllDemoPackingStatuses,
-  getDemoTrainingVisits,
-  saveDemoTrainingVisit,
-  updateDemoTrainingVisit,
-  getDemoAcademicQueries,
-  getDemoAcademicQueriesBySchool,
-  saveDemoAcademicQuery,
-  updateDemoAcademicQuery,
-} from '../demo/demoDataStore';
-import { getErrorMessage } from '../utils/getErrorMessage';
-
-// Payment type (not in backend interface, define locally)
-export interface Payment {
-  id: string;
-  schoolId: string;
-  amount: bigint;
-  dueDate: bigint;
-  paid: boolean;
-  paymentProof?: ExternalBlob;
-  createdTimestamp: bigint;
-  lastUpdateTimestamp: bigint;
-}
+import type { Principal } from '@icp-sdk/core/principal';
 
 // ============================================================================
 // USER PROFILE QUERIES
 // ============================================================================
 
-export function getCallerUserProfileQuery() {
-  return {
+export const getCallerUserProfileQuery = () =>
+  queryOptions({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
-      // In demo mode, return synthetic profile
       if (isDemoActive()) {
-        const demoRole = getDemoRole();
-        if (demoRole) {
-          return createDemoProfile(demoRole);
-        }
         return null;
       }
-      
-      // Non-demo mode: fetch from backend
-      // This will be called by the actor hook
-      return null;
+      const actorModule = await import('./useActor');
+      const { actor } = actorModule.useActor();
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerUserProfile();
     },
     retry: false,
-  };
-}
+  });
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
-      // In demo mode, return synthetic profile
-      if (demoActive) {
-        const demoRole = getDemoRole();
-        if (demoRole) {
-          return createDemoProfile(demoRole);
-        }
+      if (isDemoActive()) {
         return null;
       }
-
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserProfile();
     },
-    // Enable in demo mode even without actor
-    enabled: demoActive || (!!actor && !actorFetching),
+    enabled: !!actor && !actorFetching && !isDemoActive(),
     retry: false,
   });
 
-  // Return custom state that properly reflects actor dependency
   return {
     ...query,
-    isLoading: demoActive ? query.isLoading : (actorFetching || query.isLoading),
-    isFetched: demoActive ? query.isFetched : (!!actor && query.isFetched),
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
   };
 }
 
@@ -119,9 +87,6 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (isDemoActive()) {
-        throw new Error('Cannot save profile in Demo/Preview Mode');
-      }
       if (!actor) throw new Error('Actor not available');
       return actor.saveCallerUserProfile(profile);
     },
@@ -132,622 +97,7 @@ export function useSaveCallerUserProfile() {
 }
 
 // ============================================================================
-// SCHOOL QUERIES
-// ============================================================================
-
-export function useListAllSchools() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<School[]>({
-    queryKey: ['schools'],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoSchools();
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.listAllSchools();
-    },
-    // Enable in demo mode even without actor
-    enabled: demoActive || (!!actor && !actorFetching),
-  });
-}
-
-export function useGetSchool(id: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<School>({
-    queryKey: ['school', id],
-    queryFn: async () => {
-      if (demoActive) {
-        const school = getDemoSchool(id);
-        if (!school) throw new Error('School not found');
-        return school;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.getSchool(id);
-    },
-    // Enable in demo mode even without actor
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!id,
-  });
-}
-
-export function useCreateSchool() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      id: string;
-      name: string;
-      address: string;
-      city: string;
-      state: string;
-      contactPerson: string;
-      contactNumber: string;
-      email: string;
-      website: string | null;
-      studentCount: bigint;
-    }) => {
-      if (isDemoActive()) {
-        const now = BigInt(Date.now() * 1000000);
-        const school: School = {
-          ...params,
-          website: params.website || undefined,
-          createdTimestamp: now,
-          lastUpdateTimestamp: now,
-        };
-        saveDemoSchool(school);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.createSchool(
-        params.id,
-        params.name,
-        params.address,
-        params.city,
-        params.state,
-        params.contactPerson,
-        params.contactNumber,
-        params.email,
-        params.website,
-        params.studentCount
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schools'] });
-    },
-  });
-}
-
-export function useUpdateSchool() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      id: string;
-      name: string;
-      address: string;
-      city: string;
-      state: string;
-      contactPerson: string;
-      contactNumber: string;
-      email: string;
-      website: string | null;
-      studentCount: bigint;
-    }) => {
-      if (isDemoActive()) {
-        const existing = getDemoSchool(params.id);
-        if (!existing) throw new Error('School not found');
-        const updated: School = {
-          ...existing,
-          ...params,
-          website: params.website || undefined,
-          lastUpdateTimestamp: BigInt(Date.now() * 1000000),
-        };
-        saveDemoSchool(updated);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateSchool(
-        params.id,
-        params.name,
-        params.address,
-        params.city,
-        params.state,
-        params.contactPerson,
-        params.contactNumber,
-        params.email,
-        params.website,
-        params.studentCount
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['schools'] });
-      queryClient.invalidateQueries({ queryKey: ['school', variables.id] });
-    },
-  });
-}
-
-// ============================================================================
-// OUTSTANDING AMOUNT QUERIES
-// ============================================================================
-
-export function useGetOutstandingAmount(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<bigint>({
-    queryKey: ['outstanding', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoOutstanding(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.getOutstandingAmount(schoolId);
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useHasOutstandingAmount(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<boolean>({
-    queryKey: ['hasOutstanding', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return hasDemoOutstanding(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.hasOutstandingAmount(schoolId);
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useSetOutstandingAmount() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: { schoolId: string; amount: bigint }) => {
-      if (isDemoActive()) {
-        setDemoOutstanding(params.schoolId, params.amount);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.setOutstandingAmount(params.schoolId, params.amount);
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['outstanding', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['hasOutstanding', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['outstandingAmounts'] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-export function useGetOutstandingAmounts() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-  const { data: schools } = useListAllSchools();
-
-  return useQuery<Record<string, bigint>>({
-    queryKey: ['outstandingAmounts'],
-    queryFn: async () => {
-      if (demoActive) {
-        return getAllDemoOutstanding();
-      }
-      if (!actor || !schools) return {};
-      const schoolIds = schools.map(s => s.id);
-      const amounts = await actor.getOutstandingAmountsBySchoolIds(schoolIds);
-      const result: Record<string, bigint> = {};
-      for (const [schoolId, amount] of amounts) {
-        result[schoolId] = amount;
-      }
-      return result;
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schools,
-  });
-}
-
-// ============================================================================
-// PACKING QUERIES
-// ============================================================================
-
-export function useGetPackingStatus(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<PackingStatus | null>({
-    queryKey: ['packingStatus', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoPackingStatus(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      try {
-        return await actor.getPackingStatus(schoolId);
-      } catch (error) {
-        return null;
-      }
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useCreateOrUpdatePackingStatus() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      schoolId: string;
-      kitCount: bigint;
-      addOnCount: bigint;
-      packed: boolean;
-      dispatched: boolean;
-      dispatchDetails: string | null;
-      currentTheme: string;
-    }) => {
-      if (isDemoActive()) {
-        const now = BigInt(Date.now() * 1000000);
-        const existing = getDemoPackingStatus(params.schoolId);
-        const status: PackingStatus = {
-          schoolId: params.schoolId,
-          kitCount: params.kitCount,
-          addOnCount: params.addOnCount,
-          packed: params.packed,
-          dispatched: params.dispatched,
-          dispatchDetails: params.dispatchDetails || undefined,
-          currentTheme: params.currentTheme,
-          createdTimestamp: existing?.createdTimestamp || now,
-          lastUpdateTimestamp: now,
-        };
-        saveDemoPackingStatus(status);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.createOrUpdatePackingStatus(
-        params.schoolId,
-        params.kitCount,
-        params.addOnCount,
-        params.packed,
-        params.dispatched,
-        params.dispatchDetails,
-        params.currentTheme
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['packingStatus', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['packingStatuses'] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-export function useGetPackingCount(schoolId: string, pClass: PackingClass, theme: PackingTheme) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery({
-    queryKey: ['packingCount', schoolId, pClass, theme],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoPackingCount(schoolId, pClass, theme);
-      }
-      if (!actor) throw new Error('Actor not available');
-      try {
-        return await actor.getPackingCount(schoolId, pClass, theme);
-      } catch (error) {
-        return null;
-      }
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useCreateOrUpdatePackingCount() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      schoolId: string;
-      pClass: PackingClass;
-      theme: PackingTheme;
-      totalCount: bigint;
-      packedCount: bigint;
-      addOnCount: bigint;
-    }) => {
-      if (isDemoActive()) {
-        const now = BigInt(Date.now() * 1000000);
-        const existing = getDemoPackingCount(params.schoolId, params.pClass, params.theme);
-        const count = {
-          classType: params.pClass,
-          theme: params.theme,
-          totalCount: params.totalCount,
-          packedCount: params.packedCount,
-          addOnCount: params.addOnCount,
-          createdTimestamp: existing?.createdTimestamp || now,
-          lastUpdateTimestamp: now,
-        };
-        saveDemoPackingCount(params.schoolId, count);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.createOrUpdatePackingCount(
-        params.schoolId,
-        params.pClass,
-        params.theme,
-        params.totalCount,
-        params.packedCount,
-        params.addOnCount
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['packingCount', variables.schoolId, variables.pClass, variables.theme] });
-      queryClient.invalidateQueries({ queryKey: ['packingCountsBySchool', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-export function useGetPackingCountsBySchool(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery({
-    queryKey: ['packingCountsBySchool', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoPackingCountsBySchool(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.getPackingCountsBySchool(schoolId);
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useListAllPackingStatuses() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<PackingStatus[]>({
-    queryKey: ['packingStatuses'],
-    queryFn: async () => {
-      if (demoActive) {
-        return getAllDemoPackingStatuses();
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.listAllPackingStatuses();
-    },
-    enabled: demoActive || (!!actor && !actorFetching),
-  });
-}
-
-// ============================================================================
-// TRAINING VISITS
-// ============================================================================
-
-export function useListTrainingVisitsBySchool(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<TrainingVisit[]>({
-    queryKey: ['trainingVisits', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoTrainingVisits(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.listTrainingVisitsBySchool(schoolId);
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useCreateTrainingVisit() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      schoolId: string;
-      visitDate: bigint;
-      reason: string;
-      visitingPerson: string;
-      contactPersonMobile: string;
-      observations: string;
-      classroomObservationProof: ExternalBlob | null;
-    }) => {
-      if (isDemoActive()) {
-        let proofData: { name: string; type: string; size: number; data: string } | undefined;
-        if (params.classroomObservationProof) {
-          const bytes = await params.classroomObservationProof.getBytes();
-          const base64 = btoa(String.fromCharCode(...bytes));
-          proofData = {
-            name: 'proof.pdf',
-            type: 'application/pdf',
-            size: bytes.length,
-            data: `data:application/pdf;base64,${base64}`,
-          };
-        }
-        return saveDemoTrainingVisit({
-          schoolId: params.schoolId,
-          visitDate: params.visitDate,
-          reason: params.reason,
-          visitingPerson: params.visitingPerson,
-          contactPersonMobile: params.contactPersonMobile,
-          observations: params.observations,
-          classroomObservationProof: proofData,
-        });
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.createTrainingVisit(
-        params.schoolId,
-        params.visitDate,
-        params.reason,
-        params.visitingPerson,
-        params.contactPersonMobile,
-        params.observations,
-        params.classroomObservationProof
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['trainingVisits', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-export function useUpdateTrainingVisit() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: {
-      id: string;
-      schoolId: string;
-      visitDate: bigint;
-      reason: string;
-      visitingPerson: string;
-      contactPersonMobile: string;
-      observations: string;
-      classroomObservationProof: ExternalBlob | null;
-    }) => {
-      if (isDemoActive()) {
-        let proofData: { name: string; type: string; size: number; data: string } | undefined;
-        if (params.classroomObservationProof) {
-          const bytes = await params.classroomObservationProof.getBytes();
-          const base64 = btoa(String.fromCharCode(...bytes));
-          proofData = {
-            name: 'proof.pdf',
-            type: 'application/pdf',
-            size: bytes.length,
-            data: `data:application/pdf;base64,${base64}`,
-          };
-        }
-        updateDemoTrainingVisit({
-          id: params.id,
-          schoolId: params.schoolId,
-          visitDate: params.visitDate,
-          reason: params.reason,
-          visitingPerson: params.visitingPerson,
-          contactPersonMobile: params.contactPersonMobile,
-          observations: params.observations,
-          classroomObservationProof: proofData,
-        });
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateTrainingVisit(
-        params.id,
-        params.schoolId,
-        params.visitDate,
-        params.reason,
-        params.visitingPerson,
-        params.contactPersonMobile,
-        params.observations,
-        params.classroomObservationProof
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['trainingVisits', variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-// ============================================================================
-// ACADEMIC QUERIES
-// ============================================================================
-
-export function useListAllAcademicQueries() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<AcademicQuery[]>({
-    queryKey: ['academicQueries'],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoAcademicQueries();
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.listAllAcademicQueries();
-    },
-    enabled: demoActive || (!!actor && !actorFetching),
-  });
-}
-
-export function useListAcademicQueriesBySchool(schoolId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
-
-  return useQuery<AcademicQuery[]>({
-    queryKey: ['academicQueries', schoolId],
-    queryFn: async () => {
-      if (demoActive) {
-        return getDemoAcademicQueriesBySchool(schoolId);
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.listAcademicQueriesBySchool(schoolId);
-    },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
-  });
-}
-
-export function useCreateAcademicQuery() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: { schoolId: string; queries: string }) => {
-      if (isDemoActive()) {
-        const demoRole = getDemoRole();
-        return saveDemoAcademicQuery({
-          schoolId: params.schoolId,
-          queries: params.queries,
-          raisedBy: demoRole || 'demo-user',
-        });
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.createAcademicQuery(params.schoolId, params.queries);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academicQueries'] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-export function useRespondToAcademicQuery() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (params: { id: string; response: string; status: Variant_resolved_open }) => {
-      if (isDemoActive()) {
-        updateDemoAcademicQuery(params.id, params.response, params.status);
-        return;
-      }
-      if (!actor) throw new Error('Actor not available');
-      return actor.respondToAcademicQuery(params.id, params.response, params.status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academicQueries'] });
-      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
-    },
-  });
-}
-
-// ============================================================================
-// STAFF MANAGEMENT (Admin only)
+// STAFF MANAGEMENT QUERIES
 // ============================================================================
 
 export function useListAllStaff() {
@@ -771,7 +121,7 @@ export function useCreateStaffProfile() {
     mutationFn: async (params: {
       principal: Principal;
       fullName: string;
-      role: StaffRole;
+      role: any;
       department: string;
       contactNumber: string;
       email: string;
@@ -800,7 +150,7 @@ export function useUpdateStaffProfile() {
     mutationFn: async (params: {
       principal: Principal;
       fullName: string;
-      role: StaffRole;
+      role: any;
       department: string;
       contactNumber: string;
       email: string;
@@ -837,7 +187,560 @@ export function useRepairStaffPermissions() {
 }
 
 // ============================================================================
-// AUDIT LOG (Admin only)
+// SCHOOL QUERIES
+// ============================================================================
+
+export function useListAllSchools() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<School[]>({
+    queryKey: ['schools'],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        return getDemoSchools();
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.listAllSchools();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGetSchool(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<School>({
+    queryKey: ['school', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const schools = getDemoSchools();
+        const school = schools.find((s) => s.id === schoolId);
+        if (!school) throw new Error('School not found');
+        return school;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getSchool(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+  });
+}
+
+export function useCreateSchool() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      contactPerson: string;
+      contactNumber: string;
+      email: string;
+      website: string | null;
+      studentCount: bigint;
+      shippingAddress: string;
+      product: string;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('createSchool');
+        createDemoSchool({
+          ...params,
+          website: params.website || undefined,
+        });
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.createSchool(
+        params.id,
+        params.name,
+        params.address,
+        params.city,
+        params.state,
+        params.contactPerson,
+        params.contactNumber,
+        params.email,
+        params.website,
+        params.studentCount,
+        params.shippingAddress,
+        params.product
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schools'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useUpdateSchool() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      contactPerson: string;
+      contactNumber: string;
+      email: string;
+      website: string | null;
+      studentCount: bigint;
+      shippingAddress: string;
+      product: string;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('updateSchool');
+        updateDemoSchool({
+          ...params,
+          website: params.website || undefined,
+        });
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateSchool(
+        params.id,
+        params.name,
+        params.address,
+        params.city,
+        params.state,
+        params.contactPerson,
+        params.contactNumber,
+        params.email,
+        params.website,
+        params.studentCount,
+        params.shippingAddress,
+        params.product
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['schools'] });
+      queryClient.invalidateQueries({ queryKey: ['school', variables.id] });
+    },
+  });
+}
+
+// ============================================================================
+// NOTIFICATIONS QUERIES
+// ============================================================================
+
+export function useGetNotifications() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Notification[]>({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        return [];
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getNotifications();
+    },
+    enabled: !!actor && !actorFetching && !isDemoActive(),
+    refetchInterval: 30000, // Poll every 30 seconds
+  });
+}
+
+export function useMarkNotificationAsRead() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (notificationId: string) => {
+      if (isDemoActive()) {
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.markNotificationAsRead(notificationId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsAsRead() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (isDemoActive()) {
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.markAllNotificationsAsRead();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+// ============================================================================
+// OUTSTANDING AMOUNT QUERIES
+// ============================================================================
+
+export function useGetOutstandingAmount(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<bigint>({
+    queryKey: ['outstandingAmount', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const amounts = getDemoOutstandingAmounts();
+        return amounts[schoolId] || BigInt(0);
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getOutstandingAmount(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+  });
+}
+
+export function useGetOutstandingAmountsBySchoolIds(schoolIds: string[]) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<[string, bigint][]>({
+    queryKey: ['outstandingAmounts', schoolIds],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const amounts = getDemoOutstandingAmounts();
+        return schoolIds.map((id) => [id, amounts[id] || BigInt(0)] as [string, bigint]);
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getOutstandingAmountsBySchoolIds(schoolIds);
+    },
+    enabled: !!actor && !actorFetching && schoolIds.length > 0,
+  });
+}
+
+export function useSetOutstandingAmount() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { schoolId: string; amount: bigint }) => {
+      if (isDemoActive()) {
+        canPerformAction('setOutstandingAmount');
+        setDemoOutstandingAmount(params.schoolId, params.amount);
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.setOutstandingAmount(params.schoolId, params.amount);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['outstandingAmount', variables.schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['outstandingAmounts'] });
+    },
+  });
+}
+
+// ============================================================================
+// PACKING QUERIES
+// ============================================================================
+
+export function useGetPackingStatus(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<PackingStatus>({
+    queryKey: ['packingStatus', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const status = getDemoPackingStatus(schoolId);
+        if (!status) throw new Error('Packing status not found');
+        return status;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getPackingStatus(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+    retry: false,
+  });
+}
+
+export function useGetPackingCountsBySchool(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<PackingCount[]>({
+    queryKey: ['packingCounts', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const counts = getDemoPackingCountsBySchool(schoolId);
+        return counts.filter((c) => c.classType !== undefined);
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getPackingCountsBySchool(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+  });
+}
+
+export function useListAllPackingStatuses() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<PackingStatus[]>({
+    queryKey: ['packingStatuses'],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        return getDemoPackingStatuses();
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.listAllPackingStatuses();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useCreateOrUpdatePackingStatus() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      schoolId: string;
+      kitCount: bigint;
+      addOnCount: bigint;
+      packed: boolean;
+      dispatched: boolean;
+      dispatchDetails: string | null;
+      currentTheme: string;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('updatePackingStatus');
+        createOrUpdateDemoPackingStatus(params);
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.createOrUpdatePackingStatus(
+        params.schoolId,
+        params.kitCount,
+        params.addOnCount,
+        params.packed,
+        params.dispatched,
+        params.dispatchDetails,
+        params.currentTheme
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['packingStatus', variables.schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['packingStatuses'] });
+    },
+  });
+}
+
+export function useCreateOrUpdatePackingCount() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      schoolId: string;
+      pClass: PackingClass;
+      theme: PackingTheme;
+      totalCount: bigint;
+      packedCount: bigint;
+      addOnCount: bigint;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('updatePackingCount');
+        createOrUpdateDemoPackingCount(params);
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.createOrUpdatePackingCount(
+        params.schoolId,
+        params.pClass,
+        params.theme,
+        params.totalCount,
+        params.packedCount,
+        params.addOnCount
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['packingCounts', variables.schoolId] });
+    },
+  });
+}
+
+// ============================================================================
+// TRAINING QUERIES
+// ============================================================================
+
+export function useListTrainingVisitsBySchool(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<TrainingVisit[]>({
+    queryKey: ['trainingVisits', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        return getDemoTrainingVisits(schoolId);
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.listTrainingVisitsBySchool(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+  });
+}
+
+export function useCreateTrainingVisit() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      schoolId: string;
+      visitDate: bigint;
+      reason: string;
+      visitingPerson: string;
+      contactPersonMobile: string;
+      observations: string;
+      classroomObservationProof: any;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('createTrainingVisit');
+        createDemoTrainingVisit(params);
+        return 'demo-visit-id';
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.createTrainingVisit(
+        params.schoolId,
+        params.visitDate,
+        params.reason,
+        params.visitingPerson,
+        params.contactPersonMobile,
+        params.observations,
+        params.classroomObservationProof
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['trainingVisits', variables.schoolId] });
+    },
+  });
+}
+
+export function useUpdateTrainingVisit() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      schoolId: string;
+      visitDate: bigint;
+      reason: string;
+      visitingPerson: string;
+      contactPersonMobile: string;
+      observations: string;
+      classroomObservationProof: any;
+    }) => {
+      if (isDemoActive()) {
+        canPerformAction('updateTrainingVisit');
+        updateDemoTrainingVisit(params);
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateTrainingVisit(
+        params.id,
+        params.schoolId,
+        params.visitDate,
+        params.reason,
+        params.visitingPerson,
+        params.contactPersonMobile,
+        params.observations,
+        params.classroomObservationProof
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['trainingVisits', variables.schoolId] });
+    },
+  });
+}
+
+// ============================================================================
+// ACADEMIC QUERIES
+// ============================================================================
+
+export function useListAllAcademicQueries() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<AcademicQuery[]>({
+    queryKey: ['academicQueries'],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        return getDemoAcademicQueries();
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.listAllAcademicQueries();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useListAcademicQueriesBySchool(schoolId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<AcademicQuery[]>({
+    queryKey: ['academicQueries', schoolId],
+    queryFn: async () => {
+      if (isDemoActive()) {
+        const queries = getDemoAcademicQueries();
+        return queries.filter((q) => q.schoolId === schoolId);
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.listAcademicQueriesBySchool(schoolId);
+    },
+    enabled: !!actor && !actorFetching && !!schoolId,
+  });
+}
+
+export function useCreateAcademicQuery() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { schoolId: string; queries: string }) => {
+      if (isDemoActive()) {
+        canPerformAction('createAcademicQuery');
+        createDemoAcademicQuery(params);
+        return 'demo-query-id';
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.createAcademicQuery(params.schoolId, params.queries);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['academicQueries'] });
+    },
+  });
+}
+
+export function useRespondToAcademicQuery() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { id: string; response: string; status: Variant_resolved_open }) => {
+      if (isDemoActive()) {
+        canPerformAction('respondToAcademicQuery');
+        respondToDemoAcademicQuery(params);
+        return;
+      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.respondToAcademicQuery(params.id, params.response, params.status);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['academicQueries'] });
+    },
+  });
+}
+
+// ============================================================================
+// AUDIT LOG QUERIES
 // ============================================================================
 
 export function useListAllAuditLogs() {
@@ -867,23 +770,21 @@ export function useGetFilteredAuditLogs(criteria: FilterCriteria) {
 }
 
 // ============================================================================
-// ADMIN CONSOLIDATED SCHOOL DETAILS
+// CONSOLIDATED SCHOOL DETAILS (Admin only)
 // ============================================================================
 
 export function useGetConsolidatedSchoolDetails(schoolId: string) {
   const { actor, isFetching: actorFetching } = useActor();
-  const demoActive = isDemoActive();
 
   return useQuery<ConsolidatedSchoolModuleData | null>({
     queryKey: ['consolidatedSchoolDetails', schoolId],
     queryFn: async () => {
-      if (demoActive) {
-        // In demo mode, return a clear fallback message
+      if (isDemoActive()) {
         return null;
       }
       if (!actor) throw new Error('Actor not available');
       return actor.getConsolidatedSchoolDetails(schoolId);
     },
-    enabled: (demoActive || (!!actor && !actorFetching)) && !!schoolId,
+    enabled: !!actor && !actorFetching && !!schoolId && !isDemoActive(),
   });
 }

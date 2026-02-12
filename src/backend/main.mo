@@ -13,6 +13,7 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Runtime "mo:core/Runtime";
 
+
 // Specify the migration module in the with-clause
 
 actor {
@@ -37,8 +38,17 @@ actor {
     email : Text;
     website : ?Text;
     studentCount : Nat;
+    shippingAddress : Text;
+    product : Text;
     createdTimestamp : Int;
     lastUpdateTimestamp : Int;
+  };
+
+  public type Notification = {
+    id : Text;
+    content : Text;
+    timestamp : Int;
+    isRead : Bool;
   };
 
   public type StaffRole = {
@@ -252,11 +262,13 @@ actor {
   let trainingVisits = Map.empty<Text, TrainingVisit>();
   let academicQueries = Map.empty<Text, AcademicQuery>();
   let auditLogs = Map.empty<Text, AuditLog>();
+  let notifications = Map.empty<Text, Notification>();
 
   var auditLogCounter : Nat = 0;
   var queriesCounter : Nat = 0;
   var visitCounter : Nat = 0;
   var paymentCounter : Nat = 0;
+  var notificationCounter : Nat = 0;
 
   // ============================================================================
   // AUTHORIZATION HELPERS
@@ -692,8 +704,13 @@ actor {
     email : Text,
     website : ?Text,
     studentCount : Nat,
+    shippingAddress : Text,
+    product : Text,
   ) : async () {
-    requireAdmin(caller);
+    requireAnyRole(caller, [#admin, #marketing]);
+    if (product != "Toddler" and product != "Neo" and product != "Funtaskit" and product != "Braindemics") {
+      Runtime.trap("Invalid product selection");
+    };
 
     if (schools.containsKey(id)) {
       Runtime.trap("School with this ID already exists");
@@ -711,6 +728,8 @@ actor {
       email;
       website;
       studentCount;
+      shippingAddress;
+      product;
       createdTimestamp = now;
       lastUpdateTimestamp = now;
     };
@@ -724,6 +743,25 @@ actor {
       id,
       "Created school: " # name
     );
+
+    // Create notifications
+    let departmentsToNotify = ["Training", "Academic", "Packing", "Accounts"];
+    for (department in departmentsToNotify.values()) {
+      let notificationContent = "New school added: ID - " # id # ", Name - " # name;
+      createNotification(department, notificationContent);
+    };
+  };
+
+  func createNotification(department : Text, content : Text) {
+    notificationCounter += 1;
+    let id = "NOTIF-" # notificationCounter.toText();
+    let notification : Notification = {
+      id;
+      content = department # ": " # content;
+      timestamp = Time.now();
+      isRead = false;
+    };
+    notifications.add(id, notification);
   };
 
   public shared ({ caller }) func updateSchool(
@@ -737,8 +775,13 @@ actor {
     email : Text,
     website : ?Text,
     studentCount : Nat,
+    shippingAddress : Text,
+    product : Text,
   ) : async () {
     requireAdmin(caller);
+    if (product != "Toddler" and product != "Neo" and product != "Funtaskit" and product != "Braindemics") {
+      Runtime.trap("Invalid product selection");
+    };
 
     switch (schools.get(id)) {
       case (null) { Runtime.trap("School not found") };
@@ -754,6 +797,8 @@ actor {
           email;
           website;
           studentCount;
+          shippingAddress;
+          product;
           lastUpdateTimestamp = Time.now();
         };
         schools.add(id, updated);
@@ -780,6 +825,46 @@ actor {
   public query ({ caller }) func listAllSchools() : async [School] {
     let _ = requireStaffRole(caller);
     schools.values().toArray();
+  };
+
+  // ============================================================================
+  // NOTIFICATIONS MANAGEMENT
+  // ============================================================================
+
+  public query ({ caller }) func getNotifications() : async [Notification] {
+    let _ = requireStaffRole(caller);
+    let notificationsArray = notifications.values().toArray();
+    let filteredNotifications = notificationsArray.filter(
+      func(notification) {
+        not notification.isRead;
+      }
+    );
+    filteredNotifications;
+  };
+
+  public shared ({ caller }) func markNotificationAsRead(notificationId : Text) : async () {
+    let _ = requireStaffRole(caller);
+    switch (notifications.get(notificationId)) {
+      case (null) {};
+      case (?notification) {
+        let updatedNotification = {
+          notification with
+          isRead = true;
+        };
+        notifications.add(notificationId, updatedNotification);
+      };
+    };
+  };
+
+  public shared ({ caller }) func markAllNotificationsAsRead() : async () {
+    let _ = requireStaffRole(caller);
+    for ((id, notification) in notifications.entries()) {
+      let updatedNotification = {
+        notification with
+        isRead = true;
+      };
+      notifications.add(id, updatedNotification);
+    };
   };
 
   // ============================================================================
@@ -1235,4 +1320,3 @@ actor {
     logs.sort();
   };
 };
-

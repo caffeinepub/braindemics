@@ -11,6 +11,15 @@ const ALLOWED_DEMO_ACTIONS = new Set([
   'training-visit',
   'training-query',
   'academic-response',
+  'setOutstandingAmount',
+  'updatePackingStatus',
+  'updatePackingCount',
+  'createTrainingVisit',
+  'updateTrainingVisit',
+  'createAcademicQuery',
+  'respondToAcademicQuery',
+  'createSchool',
+  'updateSchool',
 ]);
 
 export function shouldDisableMutations(): boolean {
@@ -20,6 +29,13 @@ export function shouldDisableMutations(): boolean {
 export function isActionAllowedInDemo(action: string): boolean {
   if (!isDemoActive()) return true;
   return ALLOWED_DEMO_ACTIONS.has(action);
+}
+
+export function canPerformAction(action: string): void {
+  if (!isDemoActive()) return;
+  if (!ALLOWED_DEMO_ACTIONS.has(action)) {
+    throw new Error(`This action (${action}) is unavailable in Demo/Preview Mode`);
+  }
 }
 
 export function demoDisabledReason(action?: string): string {

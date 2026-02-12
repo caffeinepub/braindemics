@@ -1,67 +1,60 @@
 import { useState } from 'react';
-import { useListAllAcademicQueries, useRespondToAcademicQuery, useListAllSchools } from '../../hooks/useQueries';
+import { useListAllAcademicQueries, useRespondToAcademicQuery, useGetSchool, useGetPackingStatus, useGetPackingCountsBySchool } from '../../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
-import { Variant_resolved_open } from '../../backend';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { getErrorMessage } from '../../utils/getErrorMessage';
+import { Variant_resolved_open } from '../../backend';
 
 export default function AcademicQueriesPage() {
-  const { data: queries, isLoading } = useListAllAcademicQueries();
-  const { data: schools, isLoading: schoolsLoading } = useListAllSchools();
-  const respondToQuery = useRespondToAcademicQuery();
+  const { data: queries = [], isLoading } = useListAllAcademicQueries();
+  const respondMutation = useRespondToAcademicQuery();
 
   const [selectedQuery, setSelectedQuery] = useState<any>(null);
-  const [responseDialogOpen, setResponseDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState<'open' | 'resolved'>('open');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'resolved'>('all');
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
 
-  // Build school ID to name map
-  const schoolMap = new Map<string, string>();
-  if (schools) {
-    schools.forEach(school => {
-      schoolMap.set(school.id, school.name);
-    });
-  }
+  const { data: school } = useGetSchool(selectedSchoolId || '');
+  const { data: packingStatus } = useGetPackingStatus(selectedSchoolId || '');
+  const { data: packingCounts = [] } = useGetPackingCountsBySchool(selectedSchoolId || '');
 
-  const filteredQueries = queries?.filter((q) => {
-    if (filterStatus === 'all') return true;
-    return q.status === filterStatus;
-  });
-
-  const openResponseDialog = (query: any) => {
+  const handleRespond = (query: any) => {
     setSelectedQuery(query);
+    setSelectedSchoolId(query.schoolId);
     setResponse(query.response || '');
-    setStatus(query.status);
-    setResponseDialogOpen(true);
+    setStatus(query.status === 'open' ? 'open' : 'resolved');
+    setDialogOpen(true);
   };
 
-  const handleSubmitResponse = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmitResponse = async () => {
     if (!selectedQuery) return;
 
     try {
-      await respondToQuery.mutateAsync({
+      await respondMutation.mutateAsync({
         id: selectedQuery.id,
         response,
-        status: status as Variant_resolved_open,
+        status: status === 'resolved' ? Variant_resolved_open.resolved : Variant_resolved_open.open,
       });
-
       toast.success('Response submitted successfully');
-      setResponseDialogOpen(false);
+      setDialogOpen(false);
       setSelectedQuery(null);
+      setSelectedSchoolId(null);
       setResponse('');
-    } catch (error: any) {
-      toast.error(getErrorMessage(error));
+      setStatus('open');
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -73,113 +66,166 @@ export default function AcademicQueriesPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle>All Queries</CardTitle>
-          <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
         </CardHeader>
         <CardContent>
-          {isLoading || schoolsLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full" />
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : queries.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No queries found</p>
+          ) : (
+            <div className="space-y-4">
+              {queries.map((query) => (
+                <div key={query.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={query.status === 'open' ? 'destructive' : 'default'}>
+                      {query.status === 'open' ? 'Open' : 'Resolved'}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">
+                      {format(Number(query.createdTimestamp) / 1000000, 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">School ID: {query.schoolId}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Query</p>
+                    <p className="text-sm text-muted-foreground">{query.queries}</p>
+                  </div>
+                  {query.response && (
+                    <div>
+                      <p className="text-sm font-medium">Response</p>
+                      <p className="text-sm text-muted-foreground">{query.response}</p>
+                    </div>
+                  )}
+                  <Button size="sm" onClick={() => handleRespond(query)}>
+                    {query.response ? 'Update Response' : 'Respond'}
+                  </Button>
+                </div>
               ))}
             </div>
-          ) : filteredQueries && filteredQueries.length > 0 ? (
-            <div className="space-y-3">
-              {filteredQueries.map((query) => {
-                const schoolName = schoolMap.get(query.schoolId) || 'Unknown';
-                return (
-                  <div key={query.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <span className="text-sm font-medium">Query #{query.id}</span>
-                        <p className="text-xs text-muted-foreground mt-1">School Name: {schoolName}</p>
-                        <p className="text-xs text-muted-foreground">School ID: {query.schoolId}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={query.status === 'resolved' ? 'default' : 'secondary'}>
-                          {query.status === 'resolved' ? 'Resolved' : 'Open'}
-                        </Badge>
-                        <Button variant="outline" size="sm" onClick={() => openResponseDialog(query)}>
-                          Respond
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{query.queries}</p>
-                    {query.response && (
-                      <div className="mt-3 p-3 bg-muted rounded-md">
-                        <p className="text-xs font-medium mb-1">Response:</p>
-                        <p className="text-sm">{query.response}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              {filterStatus === 'all' ? 'No queries yet' : `No ${filterStatus} queries`}
-            </p>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={responseDialogOpen} onOpenChange={setResponseDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-card max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Respond to Query</DialogTitle>
           </DialogHeader>
-          {selectedQuery && (
-            <div className="space-y-4">
-              <div className="p-3 bg-muted rounded-md">
-                <p className="text-xs font-medium mb-1">Query:</p>
-                <p className="text-sm">{selectedQuery.queries}</p>
-              </div>
-              <form onSubmit={handleSubmitResponse} className="space-y-4 p-6 bg-white dark:bg-card rounded-lg">
+          <div className="space-y-6">
+            {selectedQuery && (
+              <>
                 <div className="space-y-2">
-                  <Label htmlFor="response">Response</Label>
-                  <Textarea
-                    id="response"
-                    value={response}
-                    onChange={(e) => setResponse(e.target.value)}
-                    rows={4}
-                    placeholder="Enter your response..."
-                    required
-                  />
+                  <p className="text-sm font-medium">Query</p>
+                  <p className="text-sm text-muted-foreground">{selectedQuery.queries}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger id="status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Packing Details (Read-only) */}
+                {packingStatus && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Packing Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div>
+                            <p className="text-sm font-medium">Kit Count</p>
+                            <p className="text-sm text-muted-foreground">{packingStatus.kitCount.toString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Add-On Count</p>
+                            <p className="text-sm text-muted-foreground">{packingStatus.addOnCount.toString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Current Theme</p>
+                            <p className="text-sm text-muted-foreground">{packingStatus.currentTheme}</p>
+                          </div>
+                        </div>
+                        {packingStatus.dispatchDetails && (
+                          <div>
+                            <p className="text-sm font-medium">Dispatch Details</p>
+                            <p className="text-sm text-muted-foreground">{packingStatus.dispatchDetails}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Packing Counts (Read-only) */}
+                {packingCounts.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Packing Counts</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Class</TableHead>
+                            <TableHead>Theme</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Packed</TableHead>
+                            <TableHead>Add-On</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {packingCounts.map((count, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>{count.classType}</TableCell>
+                              <TableCell>{count.theme}</TableCell>
+                              <TableCell>{count.totalCount.toString()}</TableCell>
+                              <TableCell>{count.packedCount.toString()}</TableCell>
+                              <TableCell>{count.addOnCount.toString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="bg-card p-4 rounded-lg space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="response">Response *</Label>
+                    <Textarea
+                      id="response"
+                      value={response}
+                      onChange={(e) => setResponse(e.target.value)}
+                      required
+                      rows={6}
+                      placeholder="Enter your response..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select value={status} onValueChange={(value: 'open' | 'resolved') => setStatus(value)}>
+                      <SelectTrigger id="status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setResponseDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={respondToQuery.isPending}>
-                    {respondToQuery.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Response
-                  </Button>
-                </DialogFooter>
-              </form>
-            </div>
-          )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSubmitResponse} disabled={respondMutation.isPending}>
+              {respondMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Response
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

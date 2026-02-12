@@ -20,7 +20,7 @@ import SchoolPackingPage from './pages/packing/SchoolPackingPage';
 import SchoolTrainingPage from './pages/training/SchoolTrainingPage';
 import TrainingQueriesPage from './pages/training/TrainingQueriesPage';
 import AcademicQueriesPage from './pages/academic/AcademicQueriesPage';
-import { getCallerUserProfileQuery } from './hooks/useQueries';
+import IndexGatePage from './pages/IndexGatePage';
 import { isDemoActive, getDemoRole } from './demo/demoSession';
 import { createDemoProfile } from './demo/demoProfile';
 import { getDashboardRoute } from './demo/demoRoutes';
@@ -48,8 +48,8 @@ const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated',
   component: AppLayout,
-  beforeLoad: async ({ context }) => {
-    // Check for demo mode first
+  beforeLoad: async () => {
+    // Only handle demo mode routing in beforeLoad
     if (isDemoActive()) {
       const demoRole = getDemoRole();
       if (demoRole) {
@@ -58,49 +58,15 @@ const authenticatedRoute = createRoute({
       }
     }
     
-    // Non-demo mode: require backend profile
-    const queryClient = (context as RouterContext).queryClient;
-    const profile = await queryClient.ensureQueryData(getCallerUserProfileQuery());
-    
-    if (!profile) {
-      throw redirect({ to: '/login' });
-    }
-    
-    return { profile };
+    // For non-demo mode, let AppLayout handle auth checks
+    return {};
   },
 });
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: async ({ context }) => {
-    // Check for demo mode first
-    if (isDemoActive()) {
-      const demoRole = getDemoRole();
-      if (demoRole) {
-        throw redirect({ to: getDashboardRoute(demoRole) });
-      }
-    }
-    
-    // Non-demo mode: require backend profile
-    const queryClient = (context as RouterContext).queryClient;
-    const profile = await queryClient.ensureQueryData(getCallerUserProfileQuery());
-    
-    if (!profile) {
-      throw redirect({ to: '/login' });
-    }
-    
-    const roleRoutes = {
-      admin: '/admin/dashboard',
-      marketing: '/marketing/dashboard',
-      accounts: '/accounts/dashboard',
-      packing: '/packing/dashboard',
-      training: '/training/dashboard',
-      academic: '/academic/dashboard',
-    };
-    
-    throw redirect({ to: roleRoutes[profile.role] || '/login' });
-  },
+  component: IndexGatePage,
 });
 
 // Admin routes
@@ -134,30 +100,6 @@ const adminSchoolDetailsRoute = createRoute({
   component: AdminSchoolDetailsPage,
 });
 
-// Admin school create route (moved from marketing)
-const adminSchoolCreateRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/admin/schools/create',
-  component: SchoolCreatePage,
-  beforeLoad: async ({ context }) => {
-    const authContext = context as AuthenticatedContext;
-    
-    // Check for demo mode first
-    if (isDemoActive()) {
-      const demoRole = getDemoRole();
-      if (demoRole !== StaffRole.admin) {
-        throw redirect({ to: getDashboardRoute(demoRole || StaffRole.marketing) });
-      }
-      return;
-    }
-    
-    // Non-demo mode: require admin role
-    if (!authContext.profile || authContext.profile.role !== StaffRole.admin) {
-      throw redirect({ to: '/marketing/dashboard' });
-    }
-  },
-});
-
 // Marketing routes
 const marketingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -165,27 +107,25 @@ const marketingDashboardRoute = createRoute({
   component: MarketingDashboardPage,
 });
 
-// Legacy marketing school create route - redirect to appropriate dashboard
-const legacySchoolCreateRoute = createRoute({
+// Marketing school create route - now accessible by Marketing role
+const marketingSchoolCreateRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/marketing/schools/create',
+  component: SchoolCreatePage,
   beforeLoad: async ({ context }) => {
     const authContext = context as AuthenticatedContext;
     
     // Check for demo mode first
     if (isDemoActive()) {
       const demoRole = getDemoRole();
-      if (demoRole === StaffRole.admin) {
-        throw redirect({ to: '/admin/schools/create' });
-      } else {
+      if (demoRole !== StaffRole.admin && demoRole !== StaffRole.marketing) {
         throw redirect({ to: getDashboardRoute(demoRole || StaffRole.marketing) });
       }
+      return;
     }
     
-    // Non-demo mode: redirect based on role
-    if (authContext.profile?.role === StaffRole.admin) {
-      throw redirect({ to: '/admin/schools/create' });
-    } else {
+    // Non-demo mode: require admin or marketing role
+    if (!authContext.profile || (authContext.profile.role !== StaffRole.admin && authContext.profile.role !== StaffRole.marketing)) {
       throw redirect({ to: '/marketing/dashboard' });
     }
   },
@@ -271,9 +211,8 @@ export const routeTree = rootRoute.addChildren([
     auditLogRoute,
     outstandingAmountRoute,
     adminSchoolDetailsRoute,
-    adminSchoolCreateRoute,
     marketingDashboardRoute,
-    legacySchoolCreateRoute,
+    marketingSchoolCreateRoute,
     accountsDashboardRoute,
     schoolPaymentsRoute,
     packingDashboardRoute,

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import { useGetCallerUserProfile } from '../../hooks/useQueries';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
@@ -13,14 +14,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import DemoPreviewBanner from '../demo/DemoPreviewBanner';
-import { isDemoActive } from '../../demo/demoSession';
+import NotificationsBell from '../notifications/NotificationsBell';
+import { isDemoActive, getDemoRole } from '../../demo/demoSession';
+import { createDemoProfile } from '../../demo/demoProfile';
 
 export default function AppLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { clear, identity } = useInternetIdentity();
-  const { data: profile, isLoading: profileLoading } = useGetCallerUserProfile();
+  const { data: profile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const isDemo = isDemoActive();
+
+  // Get the effective profile (demo or real)
+  const effectiveProfile = isDemo && getDemoRole() ? createDemoProfile(getDemoRole()!) : profile;
+
+  useEffect(() => {
+    // If not in demo mode and no identity, redirect to login
+    if (!isDemo && !identity && !profileLoading) {
+      navigate({ to: '/login' });
+    }
+
+    // If not in demo mode, identity exists, profile is fetched but null, redirect to login
+    if (!isDemo && identity && isFetched && !profile) {
+      navigate({ to: '/login' });
+    }
+  }, [isDemo, identity, profile, profileLoading, isFetched, navigate]);
 
   const handleLogout = async () => {
     await clear();
@@ -34,10 +52,10 @@ export default function AppLayout() {
       { label: 'Staff Management', path: '/admin/staff' },
       { label: 'Outstanding Amounts', path: '/admin/outstanding' },
       { label: 'Audit Logs', path: '/admin/audit' },
-      { label: 'Register School', path: '/admin/schools/create' },
     ],
     marketing: [
       { label: 'Dashboard', path: '/marketing/dashboard' },
+      { label: 'Register School', path: '/marketing/schools/create' },
     ],
     accounts: [
       { label: 'Dashboard', path: '/accounts/dashboard' },
@@ -56,19 +74,31 @@ export default function AppLayout() {
     ],
   };
 
-  if (profileLoading) {
+  // Show loading state
+  if (profileLoading || (!isDemo && !isFetched)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
       </div>
     );
   }
 
-  if (!profile) {
-    return null;
+  // Show fallback if no profile available (shouldn't happen due to useEffect redirect, but safety net)
+  if (!effectiveProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
-  const navItems = roleRoutes[profile.role] || [];
+  const navItems = roleRoutes[effectiveProfile.role] || [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -91,7 +121,8 @@ export default function AppLayout() {
             </nav>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -101,9 +132,9 @@ export default function AppLayout() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{profile.fullName}</span>
+                    <span>{effectiveProfile.fullName}</span>
                     <span className="text-xs font-normal text-muted-foreground capitalize">
-                      {profile.role}
+                      {effectiveProfile.role}
                     </span>
                   </div>
                 </DropdownMenuLabel>

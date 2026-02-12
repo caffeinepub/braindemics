@@ -1,7 +1,8 @@
 // Demo/Preview Mode local data persistence
 // Stores schools, outstanding amounts, packing status, counts, training visits, and academic queries in localStorage
 
-import type { School, PackingStatus, PackingClass, PackingTheme, TrainingVisit, AcademicQuery, Variant_resolved_open } from '../backend';
+import type { School, PackingStatus, PackingClass, PackingTheme, TrainingVisit, AcademicQuery } from '../backend';
+import { Variant_resolved_open } from '../backend';
 
 const DEMO_SCHOOLS_KEY = 'braindemics_demo_schools';
 const DEMO_OUTSTANDING_KEY = 'braindemics_demo_outstanding';
@@ -51,6 +52,8 @@ interface StoredSchool {
   email: string;
   website?: string;
   studentCount: string; // stored as string
+  shippingAddress: string;
+  product: string;
   createdTimestamp: string; // stored as string
   lastUpdateTimestamp: string; // stored as string
 }
@@ -67,6 +70,8 @@ function schoolToStored(school: School): StoredSchool {
     email: school.email,
     website: school.website,
     studentCount: school.studentCount.toString(),
+    shippingAddress: school.shippingAddress,
+    product: school.product,
     createdTimestamp: school.createdTimestamp.toString(),
     lastUpdateTimestamp: school.lastUpdateTimestamp.toString(),
   };
@@ -84,6 +89,8 @@ function storedToSchool(stored: StoredSchool): School {
     email: stored.email,
     website: stored.website,
     studentCount: BigInt(stored.studentCount || 0),
+    shippingAddress: stored.shippingAddress || '',
+    product: stored.product || 'Unknown',
     createdTimestamp: BigInt(stored.createdTimestamp || 0),
     lastUpdateTimestamp: BigInt(stored.lastUpdateTimestamp || 0),
   };
@@ -108,6 +115,52 @@ export function getDemoSchools(): School[] {
     }
     return [];
   }
+}
+
+export function createDemoSchool(school: {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  contactPerson: string;
+  contactNumber: string;
+  email: string;
+  website?: string;
+  studentCount: bigint;
+  shippingAddress: string;
+  product: string;
+}): void {
+  const now = BigInt(Date.now() * 1000000);
+  const newSchool: School = {
+    ...school,
+    createdTimestamp: now,
+    lastUpdateTimestamp: now,
+  };
+  saveDemoSchool(newSchool);
+}
+
+export function updateDemoSchool(school: {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  contactPerson: string;
+  contactNumber: string;
+  email: string;
+  website?: string;
+  studentCount: bigint;
+  shippingAddress: string;
+  product: string;
+}): void {
+  const existing = getDemoSchool(school.id);
+  const updatedSchool: School = {
+    ...school,
+    createdTimestamp: existing?.createdTimestamp || BigInt(Date.now() * 1000000),
+    lastUpdateTimestamp: BigInt(Date.now() * 1000000),
+  };
+  saveDemoSchool(updatedSchool);
 }
 
 export function saveDemoSchool(school: School): void {
@@ -135,6 +188,25 @@ export function getDemoSchool(id: string): School | null {
 // OUTSTANDING AMOUNTS
 // ============================================================================
 
+export function getDemoOutstandingAmounts(): Record<string, bigint> {
+  try {
+    const stored = localStorage.getItem(DEMO_OUTSTANDING_KEY);
+    if (!stored) return {};
+    const data = JSON.parse(stored);
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid outstanding data format');
+    }
+    const result: Record<string, bigint> = {};
+    for (const [schoolId, amount] of Object.entries(data)) {
+      result[schoolId] = BigInt(amount as string);
+    }
+    return result;
+  } catch (error) {
+    console.warn('Failed to parse demo outstanding amounts:', error);
+    return {};
+  }
+}
+
 export function getDemoOutstanding(schoolId: string): bigint {
   try {
     const stored = localStorage.getItem(DEMO_OUTSTANDING_KEY);
@@ -156,7 +228,7 @@ export function getDemoOutstanding(schoolId: string): bigint {
   }
 }
 
-export function setDemoOutstanding(schoolId: string, amount: bigint): void {
+export function setDemoOutstandingAmount(schoolId: string, amount: bigint): void {
   try {
     const stored = localStorage.getItem(DEMO_OUTSTANDING_KEY);
     const data = stored ? JSON.parse(stored) : {};
@@ -165,6 +237,10 @@ export function setDemoOutstanding(schoolId: string, amount: bigint): void {
   } catch (error) {
     console.warn('Failed to save demo outstanding amount:', error);
   }
+}
+
+export function setDemoOutstanding(schoolId: string, amount: bigint): void {
+  setDemoOutstandingAmount(schoolId, amount);
 }
 
 export function hasDemoOutstanding(schoolId: string): boolean {
@@ -183,22 +259,7 @@ export function hasDemoOutstanding(schoolId: string): boolean {
 }
 
 export function getAllDemoOutstanding(): Record<string, bigint> {
-  try {
-    const stored = localStorage.getItem(DEMO_OUTSTANDING_KEY);
-    if (!stored) return {};
-    const data = JSON.parse(stored);
-    if (typeof data !== 'object' || data === null) {
-      throw new Error('Invalid outstanding data format');
-    }
-    const result: Record<string, bigint> = {};
-    for (const [schoolId, amount] of Object.entries(data)) {
-      result[schoolId] = BigInt(amount as string);
-    }
-    return result;
-  } catch (error) {
-    console.warn('Failed to parse all demo outstanding amounts:', error);
-    return {};
-  }
+  return getDemoOutstandingAmounts();
 }
 
 // ============================================================================
@@ -233,6 +294,35 @@ export function getDemoPackingStatus(schoolId: string): PackingStatus | null {
     }
     return null;
   }
+}
+
+export function getDemoPackingStatuses(): PackingStatus[] {
+  return getAllDemoPackingStatuses();
+}
+
+export function createOrUpdateDemoPackingStatus(params: {
+  schoolId: string;
+  kitCount: bigint;
+  addOnCount: bigint;
+  packed: boolean;
+  dispatched: boolean;
+  dispatchDetails: string | null;
+  currentTheme: string;
+}): void {
+  const now = BigInt(Date.now() * 1000000);
+  const existing = getDemoPackingStatus(params.schoolId);
+  const status: PackingStatus = {
+    schoolId: params.schoolId,
+    kitCount: params.kitCount,
+    addOnCount: params.addOnCount,
+    packed: params.packed,
+    dispatched: params.dispatched,
+    dispatchDetails: params.dispatchDetails || undefined,
+    currentTheme: params.currentTheme,
+    createdTimestamp: existing?.createdTimestamp || now,
+    lastUpdateTimestamp: now,
+  };
+  saveDemoPackingStatus(status);
 }
 
 export function saveDemoPackingStatus(status: PackingStatus): void {
@@ -283,7 +373,7 @@ export function getAllDemoPackingStatuses(): PackingStatus[] {
 // PACKING COUNTS
 // ============================================================================
 
-interface DemoPackingCount {
+export interface DemoPackingCount {
   classType: PackingClass;
   theme: PackingTheme;
   totalCount: bigint;
@@ -326,6 +416,55 @@ export function getDemoPackingCount(schoolId: string, classType: PackingClass, t
     }
     return null;
   }
+}
+
+export function getDemoPackingCounts(): DemoPackingCount[] {
+  try {
+    const stored = localStorage.getItem(DEMO_PACKING_COUNTS_KEY);
+    if (!stored) return [];
+    const data = JSON.parse(stored);
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid packing counts data format');
+    }
+    const counts: DemoPackingCount[] = [];
+    for (const count of Object.values(data)) {
+      const c = count as any;
+      counts.push({
+        ...c,
+        totalCount: BigInt(c.totalCount || 0),
+        packedCount: BigInt(c.packedCount || 0),
+        addOnCount: BigInt(c.addOnCount || 0),
+        createdTimestamp: BigInt(c.createdTimestamp || 0),
+        lastUpdateTimestamp: BigInt(c.lastUpdateTimestamp || 0),
+      });
+    }
+    return counts;
+  } catch (error) {
+    console.warn('Failed to parse all demo packing counts:', error);
+    return [];
+  }
+}
+
+export function createOrUpdateDemoPackingCount(params: {
+  schoolId: string;
+  pClass: PackingClass;
+  theme: PackingTheme;
+  totalCount: bigint;
+  packedCount: bigint;
+  addOnCount: bigint;
+}): void {
+  const now = BigInt(Date.now() * 1000000);
+  const existing = getDemoPackingCount(params.schoolId, params.pClass, params.theme);
+  const count: DemoPackingCount = {
+    classType: params.pClass,
+    theme: params.theme,
+    totalCount: params.totalCount,
+    packedCount: params.packedCount,
+    addOnCount: params.addOnCount,
+    createdTimestamp: existing?.createdTimestamp || now,
+    lastUpdateTimestamp: now,
+  };
+  saveDemoPackingCount(params.schoolId, count);
 }
 
 export function saveDemoPackingCount(schoolId: string, count: DemoPackingCount): void {
@@ -445,6 +584,18 @@ export function getDemoTrainingVisits(schoolId: string): TrainingVisit[] {
   }
 }
 
+export function createDemoTrainingVisit(visit: {
+  schoolId: string;
+  visitDate: bigint;
+  reason: string;
+  visitingPerson: string;
+  contactPersonMobile: string;
+  observations: string;
+  classroomObservationProof?: any;
+}): string {
+  return saveDemoTrainingVisit(visit);
+}
+
 export function saveDemoTrainingVisit(visit: {
   schoolId: string;
   visitDate: bigint;
@@ -560,29 +711,28 @@ export function getDemoAcademicQueries(): AcademicQuery[] {
   }
 }
 
-export function getDemoAcademicQueriesBySchool(schoolId: string): AcademicQuery[] {
-  return getDemoAcademicQueries().filter(q => q.schoolId === schoolId);
+export function createDemoAcademicQuery(params: { schoolId: string; queries: string }): string {
+  return saveDemoAcademicQuery(params);
 }
 
 export function saveDemoAcademicQuery(query: {
   schoolId: string;
   queries: string;
-  raisedBy: string;
 }): string {
   try {
     const stored = localStorage.getItem(DEMO_ACADEMIC_QUERIES_KEY);
     const data: StoredAcademicQuery[] = stored ? JSON.parse(stored) : [];
     queryCounter++;
-    const id = `queries-demo-${queryCounter}`;
-    const now = BigInt(Date.now() * 1000000).toString();
+    const id = `QUERY-DEMO-${queryCounter}`;
     const newQuery: StoredAcademicQuery = {
       id,
       schoolId: query.schoolId,
-      raisedBy: query.raisedBy,
+      raisedBy: 'demo-trainer',
       queries: query.queries,
-      status: 'open' as Variant_resolved_open,
-      createdTimestamp: now,
-      lastUpdateTimestamp: now,
+      response: undefined,
+      status: Variant_resolved_open.open,
+      createdTimestamp: BigInt(Date.now() * 1000000).toString(),
+      lastUpdateTimestamp: BigInt(Date.now() * 1000000).toString(),
     };
     data.push(newQuery);
     localStorage.setItem(DEMO_ACADEMIC_QUERIES_KEY, JSON.stringify(data));
@@ -591,6 +741,10 @@ export function saveDemoAcademicQuery(query: {
     console.warn('Failed to save demo academic query:', error);
     throw new Error('Failed to save academic query');
   }
+}
+
+export function respondToDemoAcademicQuery(params: { id: string; response: string; status: Variant_resolved_open }): void {
+  updateDemoAcademicQuery(params.id, params.response, params.status);
 }
 
 export function updateDemoAcademicQuery(id: string, response: string, status: Variant_resolved_open): void {
@@ -611,5 +765,26 @@ export function updateDemoAcademicQuery(id: string, response: string, status: Va
   } catch (error) {
     console.warn('Failed to update demo academic query:', error);
     throw new Error('Failed to update academic query');
+  }
+}
+
+// ============================================================================
+// RESET ALL DEMO DATA
+// ============================================================================
+
+export function resetAllDemoData(): void {
+  try {
+    localStorage.removeItem(DEMO_SCHOOLS_KEY);
+    localStorage.removeItem(DEMO_OUTSTANDING_KEY);
+    localStorage.removeItem(DEMO_PACKING_STATUS_KEY);
+    localStorage.removeItem(DEMO_PACKING_COUNTS_KEY);
+    localStorage.removeItem(DEMO_TRAINING_VISITS_KEY);
+    localStorage.removeItem(DEMO_ACADEMIC_QUERIES_KEY);
+    localStorage.removeItem(DEMO_DATA_RESET_FLAG_KEY);
+    visitCounter = 0;
+    queryCounter = 0;
+    dataWasReset = false;
+  } catch (error) {
+    console.warn('Failed to reset demo data:', error);
   }
 }

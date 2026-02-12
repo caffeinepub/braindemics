@@ -21,7 +21,7 @@ export default function IndexGatePage() {
     // Wait for initialization to complete
     if (isInitializing) return;
 
-    // Check for demo mode first
+    // Check for demo mode first (highest priority)
     if (isDemo && currentRole) {
       const targetRoute = getDashboardRoute(currentRole);
       // Only navigate if we're not already on the target route

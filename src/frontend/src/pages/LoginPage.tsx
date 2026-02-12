@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Copy, Check, TestTube2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { validateDemoCredentials, setDemoSession, isDemoActive, getDemoRole } from '../demo/demoSession';
+import { validateDemoCredentials, setDemoSession, isDemoActive, getDemoRole, clearDemoSession } from '../demo/demoSession';
 import { getDashboardRoute } from '../demo/demoRoutes';
 import { StaffRole } from '../backend';
 
@@ -27,15 +27,13 @@ export default function LoginPage() {
   const [demoPassword, setDemoPassword] = useState('');
   const [demoError, setDemoError] = useState('');
 
-  // Check for existing demo session on mount
+  // Check for existing demo session on mount and clear it
   useEffect(() => {
     if (isDemoActive()) {
-      const role = getDemoRole();
-      if (role) {
-        navigate({ to: getDashboardRoute(role) });
-      }
+      // Clear existing demo session when landing on login page
+      clearDemoSession();
     }
-  }, [navigate]);
+  }, []);
 
   // Handle Internet Identity login success
   useEffect(() => {
@@ -84,7 +82,7 @@ export default function LoginPage() {
       // Set demo session as admin by default
       setDemoSession(StaffRole.admin);
       toast.success('Demo mode activated');
-      navigate({ to: '/admin/dashboard' });
+      navigate({ to: '/admin/dashboard', replace: true });
     } else {
       setDemoError('Invalid credentials. Use username: admin, password: demo123');
     }
@@ -97,37 +95,33 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-md">
-            <span className="text-2xl font-bold text-white">B</span>
-          </div>
-          <CardTitle className="text-3xl font-bold">Braindemics</CardTitle>
-          <CardDescription className="text-base">
-            Internal Operations Management System
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center" style={{ color: '#e73d4b' }}>
+            Braindemics
+          </CardTitle>
+          <CardDescription className="text-center">
+            Sign in to access your dashboard
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Demo/Preview Mode Section */}
+          {/* Demo Mode Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-              <TestTube2 className="h-4 w-4" />
-              <span className="text-sm font-semibold">Demo/Preview Mode</span>
+            <div className="flex items-center gap-2">
+              <TestTube2 className="h-4 w-4 text-amber-600" />
+              <h3 className="text-sm font-semibold">Demo/Preview Mode</h3>
             </div>
-            
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="demo-username">Username</Label>
                 <Input
                   id="demo-username"
-                  type="text"
                   placeholder="admin"
                   value={demoUsername}
                   onChange={(e) => setDemoUsername(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleDemoSignIn()}
+                  disabled={isLoading}
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="demo-password">Password</Label>
                 <Input
@@ -136,24 +130,28 @@ export default function LoginPage() {
                   placeholder="demo123"
                   value={demoPassword}
                   onChange={(e) => setDemoPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleDemoSignIn()}
+                  disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleDemoSignIn();
+                    }
+                  }}
                 />
               </div>
-
-              {demoError && activeLoginMethod === 'demo' && (
+              {demoError && (
                 <p className="text-sm text-destructive">{demoError}</p>
               )}
-
               <Button
                 onClick={handleDemoSignIn}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={isLoading}
+                className="w-full"
+                variant="outline"
               >
-                Demo Sign In
+                {isLoading && activeLoginMethod === 'demo' && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign In (Demo)
               </Button>
-
-              <p className="text-xs text-center text-muted-foreground">
-                Use credentials: <span className="font-mono">admin / demo123</span>
-              </p>
             </div>
           </div>
 
@@ -168,76 +166,60 @@ export default function LoginPage() {
 
           {/* Internet Identity Section */}
           <div className="space-y-4">
-            {showInternetIdentityLoginError && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-                Login failed. Please try again.
-              </div>
-            )}
-            
-            {showBackendError && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg space-y-2">
-                <p className="text-sm font-medium text-destructive">
-                  Unable to load your staff profile due to a server authorization error.
-                </p>
-                <p className="text-xs text-destructive/80">
-                  Please contact an administrator for assistance.
-                </p>
-              </div>
-            )}
-            
-            {showAccessNotConfigured && (
-              <div className="space-y-3">
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-                  Access not configured. Please contact your administrator to set up your staff profile.
-                </div>
-                
-                <div className="p-4 bg-muted rounded-lg space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Your Principal ID:</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs font-mono bg-background px-2 py-1.5 rounded border break-all">
-                        {identity?.getPrincipal().toString()}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyPrincipal}
-                        className="shrink-0"
-                      >
-                        {copied ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Share this Principal ID with your administrator to set up your access.
-                  </p>
-                </div>
-              </div>
-            )}
-
+            <h3 className="text-sm font-semibold">Internet Identity</h3>
             <Button
               onClick={handleLogin}
               disabled={isLoading}
-              className="w-full h-12 text-base font-medium bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-              size="lg"
+              className="w-full"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {loginStatus === 'logging-in' ? 'Connecting...' : 'Loading...'}
-                </>
-              ) : (
-                'Sign In with Internet Identity'
+              {isLoading && activeLoginMethod === 'internetIdentity' && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
+              {loginStatus === 'logging-in' && activeLoginMethod === 'internetIdentity'
+                ? 'Connecting...'
+                : 'Sign In with Internet Identity'}
             </Button>
 
-            <p className="text-xs text-center text-muted-foreground">
-              Secure authentication for authorized staff only
-            </p>
+            {showInternetIdentityLoginError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">
+                  Failed to connect to Internet Identity. Please try again.
+                </p>
+              </div>
+            )}
+
+            {showAccessNotConfigured && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium mb-1">Access Not Configured</p>
+                <p className="text-sm text-muted-foreground">
+                  Your account is not set up yet. Please contact an administrator to create your staff profile.
+                </p>
+                {identity && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="text-xs bg-muted px-2 py-1 rounded flex-1 overflow-hidden text-ellipsis">
+                      {identity.getPrincipal().toString()}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCopyPrincipal}
+                      className="shrink-0"
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showBackendError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium mb-1">Connection Error</p>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : 'Unable to connect to the backend. Please try again later.'}
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

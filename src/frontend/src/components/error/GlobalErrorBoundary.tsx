@@ -1,8 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { getErrorMessage } from '@/utils/getErrorMessage';
+import { AlertCircle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -35,9 +34,11 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
   }
 
+  handleReload = () => {
+    window.location.href = '/';
+  };
+
   handleGoToLogin = () => {
-    // Clear error state and navigate
-    this.setState({ hasError: false, error: null, errorInfo: null, showDetails: false });
     window.location.href = '/login';
   };
 
@@ -45,9 +46,51 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
     this.setState(prev => ({ showDetails: !prev.showDetails }));
   };
 
+  getErrorMessage = (error: Error | null): string => {
+    if (!error) return 'An unknown error occurred';
+    
+    const message = error.message || 'An error occurred';
+    
+    // Handle React minified errors
+    if (message.includes('Minified React error')) {
+      const errorCode = message.match(/#(\d+)/)?.[1];
+      switch (errorCode) {
+        case '185':
+          return 'Invalid React hook usage detected. Hooks must be called at the top level of React components. Please reload the page.';
+        case '321':
+          return 'Maximum update depth exceeded. The application encountered an infinite loop. Please reload the page.';
+        case '418':
+          return 'React context provider is missing. Please reload the page.';
+        case '425':
+          return 'React rendering error. Please reload the page.';
+        default:
+          return `A React error occurred${errorCode ? ` (code #${errorCode})` : ''}. Please reload the page and try again.`;
+      }
+    }
+    
+    // Handle "Invalid hook call"
+    if (message.includes('Invalid hook call')) {
+      return 'Invalid React hook usage detected. Hooks must be called at the top level of React components. Please reload the page.';
+    }
+    
+    // Handle "Maximum update depth exceeded"
+    if (message.includes('Maximum update depth exceeded')) {
+      return 'The application encountered an infinite loop. Please reload the page to continue.';
+    }
+    
+    // Handle BigInt serialization errors
+    if (message.includes('Do not know how to serialize a BigInt')) {
+      return 'Failed to process the request. Please try again.';
+    }
+    
+    return message;
+  };
+
   render() {
     if (this.state.hasError) {
-      const errorMessage = getErrorMessage(this.state.error);
+      const errorMessage = this.getErrorMessage(this.state.error);
+      const errorName = this.state.error?.name || 'Error';
+      const rawMessage = this.state.error?.message || '';
       const hasStack = this.state.error?.stack;
       const hasComponentStack = this.state.errorInfo?.componentStack;
 
@@ -60,7 +103,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                 <CardTitle>Something went wrong!</CardTitle>
               </div>
               <CardDescription>
-                An unexpected error occurred while loading the application.
+                The application encountered an unexpected error. Please try reloading the page.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -71,7 +114,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                 </p>
               </div>
 
-              {(hasStack || hasComponentStack) && (
+              {(hasStack || hasComponentStack || rawMessage) && (
                 <div>
                   <Button
                     variant="ghost"
@@ -89,11 +132,11 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
 
                   {this.state.showDetails && (
                     <div className="mt-2 space-y-3">
-                      {hasStack && (
+                      {rawMessage && (
                         <div className="bg-muted p-3 rounded-md">
-                          <p className="text-xs font-semibold mb-1">Stack Trace:</p>
+                          <p className="text-xs font-semibold mb-1">Raw Error:</p>
                           <pre className="text-xs font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap break-words">
-                            {this.state.error?.stack}
+                            {errorName}: {rawMessage}
                           </pre>
                         </div>
                       )}
@@ -106,13 +149,26 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                           </pre>
                         </div>
                       )}
+
+                      {hasStack && (
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs font-semibold mb-1">Stack Trace:</p>
+                          <pre className="text-xs font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap break-words">
+                            {this.state.error?.stack}
+                          </pre>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </CardContent>
-            <CardFooter>
-              <Button onClick={this.handleGoToLogin} className="w-full">
+            <CardFooter className="flex gap-2">
+              <Button onClick={this.handleReload} className="flex-1">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reload Page
+              </Button>
+              <Button onClick={this.handleGoToLogin} variant="outline" className="flex-1">
                 Go to Login
               </Button>
             </CardFooter>

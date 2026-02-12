@@ -5,18 +5,35 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GraduationCap, DollarSign, Package, MessageSquare } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
+import { useMemo } from 'react';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const { data: schools = [], isLoading: schoolsLoading } = useListAllSchools();
-  const { data: outstandingAmounts = [], isLoading: outstandingLoading } = useGetOutstandingAmountsBySchoolIds(schools.map((s) => s.id));
+  
+  // Memoize school IDs to prevent unnecessary re-renders and ensure stable reference
+  const schoolIds = useMemo(() => schools.map((s) => s.id), [schools]);
+  
+  // Only fetch outstanding amounts when we have school IDs
+  const { data: outstandingAmounts = [], isLoading: outstandingLoading } = useGetOutstandingAmountsBySchoolIds(schoolIds);
   const { data: packingStatuses = [] } = useListAllPackingStatuses();
   const { data: queries = [] } = useListAllAcademicQueries();
 
-  const totalOutstanding = outstandingAmounts.reduce((sum: bigint, [_, amount]: [string, bigint]) => sum + amount, BigInt(0));
-  const totalPacked = packingStatuses.filter((s) => s.packed).length;
-  const totalDispatched = packingStatuses.filter((s) => s.dispatched).length;
-  const openQueries = queries.filter((q) => q.status === 'open').length;
+  const totalOutstanding = useMemo(() => {
+    return outstandingAmounts.reduce((sum: bigint, [_, amount]: [string, bigint]) => sum + amount, BigInt(0));
+  }, [outstandingAmounts]);
+
+  const totalPacked = useMemo(() => {
+    return packingStatuses.filter((s) => s.packed).length;
+  }, [packingStatuses]);
+
+  const totalDispatched = useMemo(() => {
+    return packingStatuses.filter((s) => s.dispatched).length;
+  }, [packingStatuses]);
+
+  const openQueries = useMemo(() => {
+    return queries.filter((q) => q.status === 'open').length;
+  }, [queries]);
 
   const getOutstandingForSchool = (schoolId: string): bigint => {
     const found = outstandingAmounts.find(([id]) => id === schoolId);

@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import AppLayout from './components/layout/AppLayout';
@@ -13,25 +13,31 @@ import AuditLogPage from './pages/admin/AuditLogPage';
 import OutstandingAmountPage from './pages/admin/OutstandingAmountPage';
 import AdminSchoolDetailsPage from './pages/admin/AdminSchoolDetailsPage';
 import SchoolCreatePage from './pages/marketing/SchoolCreatePage';
+import MarketingSchoolsPage from './pages/marketing/MarketingSchoolsPage';
+import MarketingQueriesPage from './pages/marketing/MarketingQueriesPage';
 import SchoolDetailsPage from './pages/schools/SchoolDetailsPage';
+import AccountsSchoolsPage from './pages/accounts/AccountsSchoolsPage';
+import AccountsQueriesPage from './pages/accounts/AccountsQueriesPage';
 import SchoolPaymentsPage from './pages/accounts/SchoolPaymentsPage';
 import PackingSchoolsPage from './pages/packing/PackingSchoolsPage';
 import SchoolPackingPage from './pages/packing/SchoolPackingPage';
+import PackingDispatchHistoryPage from './pages/packing/PackingDispatchHistoryPage';
+import PackingQueriesPage from './pages/packing/PackingQueriesPage';
 import SchoolTrainingPage from './pages/training/SchoolTrainingPage';
 import TrainingQueriesPage from './pages/training/TrainingQueriesPage';
+import TrainingPackingDetailsPage from './pages/training/TrainingPackingDetailsPage';
 import AcademicQueriesPage from './pages/academic/AcademicQueriesPage';
+import AcademicPackingStatusPage from './pages/academic/AcademicPackingStatusPage';
 import IndexGatePage from './pages/IndexGatePage';
 import { isDemoActive, getDemoRole } from './demo/demoSession';
 import { createDemoProfile } from './demo/demoProfile';
-import { getDashboardRoute } from './demo/demoRoutes';
-import { StaffRole, UserProfile } from './backend';
 
 interface RouterContext {
   queryClient: QueryClient;
 }
 
 interface AuthenticatedContext extends RouterContext {
-  profile: UserProfile;
+  profile?: any;
 }
 
 export const rootRoute = createRootRoute({
@@ -107,28 +113,22 @@ const marketingDashboardRoute = createRoute({
   component: MarketingDashboardPage,
 });
 
-// Marketing school create route - now accessible by Marketing role
+const marketingSchoolsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/marketing/schools',
+  component: MarketingSchoolsPage,
+});
+
+const marketingQueriesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/marketing/queries',
+  component: MarketingQueriesPage,
+});
+
 const marketingSchoolCreateRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/marketing/schools/create',
   component: SchoolCreatePage,
-  beforeLoad: async ({ context }) => {
-    const authContext = context as AuthenticatedContext;
-    
-    // Check for demo mode first
-    if (isDemoActive()) {
-      const demoRole = getDemoRole();
-      if (demoRole !== StaffRole.admin && demoRole !== StaffRole.marketing) {
-        throw redirect({ to: getDashboardRoute(demoRole || StaffRole.marketing) });
-      }
-      return;
-    }
-    
-    // Non-demo mode: require admin or marketing role
-    if (!authContext.profile || (authContext.profile.role !== StaffRole.admin && authContext.profile.role !== StaffRole.marketing)) {
-      throw redirect({ to: '/marketing/dashboard' });
-    }
-  },
 });
 
 // Accounts routes
@@ -136,6 +136,18 @@ const accountsDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/accounts/dashboard',
   component: AccountsDashboardPage,
+});
+
+const accountsSchoolsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/accounts/schools',
+  component: AccountsSchoolsPage,
+});
+
+const accountsQueriesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/accounts/queries',
+  component: AccountsQueriesPage,
 });
 
 const schoolPaymentsRoute = createRoute({
@@ -163,6 +175,18 @@ const schoolPackingRoute = createRoute({
   component: SchoolPackingPage,
 });
 
+const packingDispatchHistoryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/packing/dispatch-history',
+  component: PackingDispatchHistoryPage,
+});
+
+const packingQueriesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/packing/queries',
+  component: PackingQueriesPage,
+});
+
 // Training routes
 const trainingDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -182,6 +206,12 @@ const trainingQueriesRoute = createRoute({
   component: TrainingQueriesPage,
 });
 
+const trainingPackingDetailsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/training/packing-details',
+  component: TrainingPackingDetailsPage,
+});
+
 // Academic routes
 const academicDashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -193,6 +223,12 @@ const academicQueriesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/academic/queries',
   component: AcademicQueriesPage,
+});
+
+const academicPackingStatusRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/academic/packing-status',
+  component: AcademicPackingStatusPage,
 });
 
 // Shared school details route
@@ -212,17 +248,25 @@ export const routeTree = rootRoute.addChildren([
     outstandingAmountRoute,
     adminSchoolDetailsRoute,
     marketingDashboardRoute,
+    marketingSchoolsRoute,
+    marketingQueriesRoute,
     marketingSchoolCreateRoute,
     accountsDashboardRoute,
+    accountsSchoolsRoute,
+    accountsQueriesRoute,
     schoolPaymentsRoute,
     packingDashboardRoute,
     packingSchoolsRoute,
     schoolPackingRoute,
+    packingDispatchHistoryRoute,
+    packingQueriesRoute,
     trainingDashboardRoute,
     schoolTrainingRoute,
     trainingQueriesRoute,
+    trainingPackingDetailsRoute,
     academicDashboardRoute,
     academicQueriesRoute,
+    academicPackingStatusRoute,
     schoolDetailsRoute,
   ]),
 ]);

@@ -1,14 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Restore a stable production build and working Demo Mode by fixing the main-route crash (Minified React error #185), eliminating invalid hook usage, and preventing redirect loops.
+**Goal:** Fix the Admin page initial-load crash (“Minified React error #185” invalid hook call) so the Admin dashboard renders successfully on first load, and improve error boundary diagnostics for future occurrences.
 
 **Planned changes:**
-- Fix the runtime crash on `"/"` so it reliably redirects once to `"/login"` when unauthenticated (non-demo) or to the correct role dashboard when authenticated or in Demo Mode.
-- Refactor `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` to remove invalid hook usage (no hooks called inside `queryFn`/non-hook functions) and ensure callers use `useGetCallerUserProfile()` (or an equivalent safe, dependency-injected query approach).
-- Add a single-run navigation guard in `frontend/src/components/layout/AppLayout.tsx` to prevent repeated redirect side-effects; use `replace: true` and only redirect when not already on the destination route.
-- Ensure Demo Mode runs end-to-end without actor/backend availability by disabling or returning demo-safe values from React Query hooks used in dashboards and shared layout elements (including notifications) when `isDemoActive()` is true.
-- Ensure a single, consistent React Query setup: exactly one `QueryClientProvider`, and the same `QueryClient` instance used across provider and router context wiring.
-- Improve the global error fallback to show an actionable English error message plus available stack/component-stack details, and provide a safe path back to `"/login"`.
+- Identify and correct the invalid React hook usage along the Admin page’s initial render path so hooks are only called from valid function components or custom hooks and not in invalid contexts (module scope, non-component functions, or invalid conditional patterns).
+- Ensure opening the app directly on the Admin route no longer triggers the GlobalErrorBoundary or logs React error #185 to the console.
+- Improve the GlobalErrorBoundary “Technical Details” output to include actionable debugging information (raw error message and component stack when available) while ensuring the error boundary itself never throws and all user-facing strings remain in English.
 
-**User-visible outcome:** Opening the production build no longer crashes on `"/"`; users are redirected correctly without loops, Demo Sign In (admin/demo123) works without backend/actor errors, and unexpected errors show a helpful English message with debugging details and a way back to login.
+**User-visible outcome:** Visiting the Admin page as the first route loads the Admin dashboard normally (no crash screen), and if any future crash happens, “Technical Details” shows useful error information without breaking the page.

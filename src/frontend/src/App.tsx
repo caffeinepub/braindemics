@@ -1,19 +1,10 @@
+import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { routeTree } from './routeTree';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import GlobalErrorBoundary from './components/error/GlobalErrorBoundary';
-import { useMemo } from 'react';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 1,
-    },
-  },
-});
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -22,17 +13,28 @@ declare module '@tanstack/react-router' {
 }
 
 export default function App() {
-  // Create router inside component to ensure QueryClient is available
-  const router = useMemo(
+  // Create QueryClient inside component to ensure it's created within React lifecycle
+  const [queryClient] = useState(
     () =>
-      createRouter({
-        routeTree,
-        context: {
-          queryClient,
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5,
+            retry: 1,
+          },
         },
-        defaultPreload: 'intent',
-      }),
-    []
+      })
+  );
+
+  // Create router inside component with the QueryClient
+  const [router] = useState(() =>
+    createRouter({
+      routeTree,
+      context: {
+        queryClient,
+      },
+      defaultPreload: 'intent',
+    })
   );
 
   return (

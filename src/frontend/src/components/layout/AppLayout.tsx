@@ -17,6 +17,7 @@ import DemoPreviewBanner from '../demo/DemoPreviewBanner';
 import NotificationsBell from '../notifications/NotificationsBell';
 import { useDemoPreview } from '../../demo/useDemoPreview';
 import { createDemoProfile } from '../../demo/demoProfile';
+import { getNavigationForRole } from '../../config/roleNavigation';
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -59,34 +60,6 @@ export default function AppLayout() {
     navigate({ to: '/login', replace: true });
   };
 
-  const roleRoutes: Record<string, { label: string; path: string }[]> = {
-    admin: [
-      { label: 'Dashboard', path: '/admin/dashboard' },
-      { label: 'Staff Management', path: '/admin/staff' },
-      { label: 'Outstanding Amounts', path: '/admin/outstanding' },
-      { label: 'Audit Logs', path: '/admin/audit' },
-    ],
-    marketing: [
-      { label: 'Dashboard', path: '/marketing/dashboard' },
-      { label: 'Register School', path: '/marketing/schools/create' },
-    ],
-    accounts: [
-      { label: 'Dashboard', path: '/accounts/dashboard' },
-    ],
-    packing: [
-      { label: 'Dashboard', path: '/packing/dashboard' },
-      { label: 'Packing', path: '/packing/schools' },
-    ],
-    training: [
-      { label: 'Dashboard', path: '/training/dashboard' },
-      { label: 'My Queries', path: '/training/queries' },
-    ],
-    academic: [
-      { label: 'Dashboard', path: '/academic/dashboard' },
-      { label: 'Queries', path: '/academic/queries' },
-    ],
-  };
-
   // Show loading state
   if (profileLoading || (!isDemo && !isFetched)) {
     return (
@@ -111,7 +84,7 @@ export default function AppLayout() {
     );
   }
 
-  const navItems = roleRoutes[effectiveProfile.role] || [];
+  const navItems = getNavigationForRole(effectiveProfile.role);
 
   return (
     <div className="min-h-screen flex flex-col">

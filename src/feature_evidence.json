@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-immediate-runtime-crash-on-the-main-route-so-the-app-no-longer-shows-the-global-something-went-wrong-screen-minified-react-error-185-and-instead-reliably-redirects-to-the-correct-page-login-when-not-authenticated-or-the-role-dashboard-when-authenticated-or-in-demo-mode",
-      "featureTitle": "Fix the immediate runtime crash on the main route (\"/\") so the app no longer shows the global \"Something went wrong!\" screen (Minified React error #185) and instead reliably redirects to the correct page (\"/login\" when not authenticated, or the role dashboard when authenticated or in Demo Mode).",
+      "featureId": "feature-identify-and-fix-the-root-cause-of-the-initial-load-crash-on-the-admin-page-that-triggers-minified-react-error-185-invalid-hook-call-so-the-app-renders-the-admin-dashboard-successfully-on-first-load",
+      "featureTitle": "Identify and fix the root cause of the initial-load crash on the Admin page that triggers “Minified React error #185” (invalid hook call), so the app renders the Admin dashboard successfully on first load.",
       "files": [
-        "frontend/src/pages/IndexGatePage.tsx"
+        "frontend/src/pages/dashboards/AdminDashboardPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -22,72 +22,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-remove-the-invalid-react-hook-usage-that-can-trigger-minified-react-error-185-by-refactoring-getcalleruserprofilequery-in-frontend-src-hooks-usequeries-ts-so-it-does-not-call-useactor-or-any-hook-inside-a-non-hook-function-queryfn-ensure-all-callers-use-the-safe-usegetcalleruserprofile-hook-or-an-equivalent-non-hook-query-implementation-that-receives-required-dependencies-without-calling-hooks",
-      "featureTitle": "Remove the invalid React hook usage that can trigger Minified React error #185 by refactoring `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` so it does not call `useActor()` (or any hook) inside a non-hook function/queryFn; ensure all callers use the safe `useGetCallerUserProfile()` hook (or an equivalent non-hook query implementation that receives required dependencies without calling hooks).",
+      "featureId": "feature-improve-crash-diagnosability-for-future-issues-by-ensuring-the-globalerrorboundary-s-technical-details-section-provides-actionable-information-for-react-185-cases-e-g-include-the-raw-error-message-and-component-stack-without-causing-secondary-errors-while-keeping-user-facing-text-in-english",
+      "featureTitle": "Improve crash diagnosability for future issues by ensuring the GlobalErrorBoundary’s “Technical Details” section provides actionable information for React #185 cases (e.g., include the raw error message and component stack without causing secondary errors), while keeping user-facing text in English.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/IndexGatePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-prevent-redirect-update-loops-caused-by-repeated-navigation-side-effects-by-adding-a-single-run-navigation-guard-to-frontend-src-components-layout-applayout-tsx-similar-to-indexgatepage-s-hasnavigated-pattern-and-ensure-redirects-use-replace-true-and-only-trigger-when-the-current-route-is-not-already-the-destination",
-      "featureTitle": "Prevent redirect/update loops caused by repeated navigation side-effects by adding a single-run navigation guard to `frontend/src/components/layout/AppLayout.tsx` (similar to `IndexGatePage`'s `hasNavigated` pattern) and ensure redirects use `replace: true` and only trigger when the current route is not already the destination.",
-      "files": [
-        "frontend/src/components/layout/AppLayout.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-demo-mode-is-fully-functional-without-backend-actor-availability-by-verifying-that-all-react-query-hooks-used-on-dashboards-and-common-layout-components-including-notifications-are-disabled-or-return-demo-safe-values-when-isdemoactive-is-true-so-the-demo-login-flow-works-end-to-end-with-no-runtime-errors",
-      "featureTitle": "Ensure Demo Mode is fully functional without backend/actor availability by verifying that all React Query hooks used on dashboards and common layout components (including notifications) are disabled or return demo-safe values when `isDemoActive()` is true, so the demo login flow works end-to-end with no runtime errors.",
-      "files": [
-        "frontend/src/components/layout/AppLayout.tsx",
-        "frontend/src/components/notifications/NotificationsBell.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-improve-the-global-error-fallback-so-that-when-an-unexpected-error-still-occurs-in-production-the-ui-shows-an-actionable-error-message-and-any-available-stack-component-stack-details-instead-of-only-a-minified-error-code-while-keeping-user-facing-text-in-english",
-      "featureTitle": "Improve the global error fallback so that when an unexpected error still occurs in production, the UI shows an actionable error message and any available stack/component-stack details (instead of only a minified error code), while keeping user-facing text in English.",
-      "files": [
+        "frontend/src/components/error/GlobalErrorBoundary.tsx",
         "frontend/src/utils/getErrorMessage.ts"
       ],
       "components": [
@@ -100,7 +38,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-2"
       ],
       "confidence": "high"
     }

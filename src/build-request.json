@@ -1,132 +1,68 @@
 {
   "kind": "build_request",
-  "title": "Restore functional demo build and fix production crash (Minified React error #185)",
+  "title": "Fix Admin initial-load crash (Minified React error #185)",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the immediate runtime crash on the main route (\"/\") so the app no longer shows the global \"Something went wrong!\" screen (Minified React error #185) and instead reliably redirects to the correct page (\"/login\" when not authenticated, or the role dashboard when authenticated or in Demo Mode).",
+      "text": "Identify and fix the root cause of the initial-load crash on the Admin page that triggers “Minified React error #185” (invalid hook call), so the app renders the Admin dashboard successfully on first load.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-9"
+          "recent-messages"
         ],
         "quotes": [
-          "it's still show same error",
-          "i want to see functionable my app in demo mode without error\nbuild now. dont ask any questions",
-          "run again"
+          "Still this error (Minified React error #185; visit https://react.dev/errors/185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.)",
+          "admin page",
+          "build the fix"
         ]
       },
       "acceptanceCriteria": [
-        "Loading the production build at \"/\" does not crash and does not render the global error boundary fallback.",
-        "When not authenticated and not in demo mode, \"/\" redirects to \"/login\" exactly once (no navigation loop).",
-        "When demo mode is active, \"/\" redirects to the demo role dashboard exactly once (no navigation loop)."
+        "Opening the app when the Admin page is the first route no longer shows the GlobalErrorBoundary screen.",
+        "No “Minified React error #185” appears in the UI or browser console during initial load.",
+        "All React hooks used by the Admin initial render path are invoked only inside valid React function components or custom hooks (no hooks executed at module scope, inside non-component functions, or conditionally in a way that violates the Rules of Hooks)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Remove the invalid React hook usage that can trigger Minified React error #185 by refactoring `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` so it does not call `useActor()` (or any hook) inside a non-hook function/queryFn; ensure all callers use the safe `useGetCallerUserProfile()` hook (or an equivalent non-hook query implementation that receives required dependencies without calling hooks).",
+      "text": "Improve crash diagnosability for future issues by ensuring the GlobalErrorBoundary’s “Technical Details” section provides actionable information for React #185 cases (e.g., include the raw error message and component stack without causing secondary errors), while keeping user-facing text in English.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-9"
+          "recent-messages"
         ],
         "quotes": [
-          "it's still show same error",
-          "run again"
+          "i cant see anything from your out.",
+          "solve this error"
         ]
       },
       "acceptanceCriteria": [
-        "No code path calls `useActor()` (or any React hook) from inside `queryFn` or any non-hook utility function.",
-        "The app does not emit \"Invalid hook call\" / \"Maximum update depth\" / React minified error #185 errors when loading \"/\" or \"/login\".",
-        "`useGetCallerUserProfile()` continues to work for non-demo Internet Identity logins and remains disabled in demo mode."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Prevent redirect/update loops caused by repeated navigation side-effects by adding a single-run navigation guard to `frontend/src/components/layout/AppLayout.tsx` (similar to `IndexGatePage`'s `hasNavigated` pattern) and ensure redirects use `replace: true` and only trigger when the current route is not already the destination.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "it's still show same error"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When the user is unauthenticated (non-demo), protected routes redirect to \"/login\" without repeated re-renders or repeated navigation attempts.",
-        "When the user is authenticated but has no profile, the app redirects to \"/login\" without repeated re-renders or repeated navigation attempts.",
-        "No console errors indicating infinite update loops occur during redirects."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Ensure Demo Mode is fully functional without backend/actor availability by verifying that all React Query hooks used on dashboards and common layout components (including notifications) are disabled or return demo-safe values when `isDemoActive()` is true, so the demo login flow works end-to-end with no runtime errors.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "i want to see functionable my app in demo mode without error"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Using Demo Sign In on `LoginPage` (admin/demo123) navigates to the admin dashboard and renders without triggering any backend calls that require an actor.",
-        "Demo mode pages render without throwing \"Actor not available\" errors.",
-        "Common layout elements (e.g., notifications bell) do not crash in demo mode and display demo-safe empty states."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Keep React Query provider usage consistent by ensuring the app uses a single `QueryClient` instance and that router context wiring remains stable (no double `QueryClientProvider` nesting, no mismatched query client instances between router context and provider).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "it's still show same error"
-        ]
-      },
-      "acceptanceCriteria": [
-        "There is exactly one `QueryClientProvider` wrapping the app at runtime.",
-        "The `QueryClient` instance passed to TanStack Router context is the same instance used by `QueryClientProvider`.",
-        "The production build no longer crashes on initial load due to provider/context conflicts."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Improve the global error fallback so that when an unexpected error still occurs in production, the UI shows an actionable error message and any available stack/component-stack details (instead of only a minified error code), while keeping user-facing text in English.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "it's still show same error"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When an error is thrown, the global error screen displays: (1) a human-readable error message, and (2) stack and/or component stack when available.",
-        "User-facing error UI text is in English.",
-        "The error screen still provides a safe path to return to \"/login\"."
+        "When an error occurs, the error boundary still renders without throwing additional errors.",
+        "Clicking “Technical Details” reveals the component stack (when available) and does not break the page.",
+        "User-facing error boundary strings remain in English."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or anything under `frontend/src/components/ui` (immutable paths).",
-    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if state migration is strictly required."
+    "Do not edit files under frontend/src/components/ui (read-only shadcn components).",
+    "Do not edit files in frontend immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Adding new business features beyond restoring the working demo/auth flows and fixing the crash.",
-    "Introducing external databases, third-party auth providers (other than Internet Identity), WebSockets, or any non-supported backend technology."
+    "Adding new product features or changing role-based permissions/authorization logic beyond what is required to stop the crash.",
+    "Backend schema changes or data migrations unless proven necessary to resolve the React crash."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

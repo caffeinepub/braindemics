@@ -17,7 +17,8 @@ export function getErrorMessage(error: unknown): string {
     }
     // Handle React minified errors
     if (error.includes('Minified React error')) {
-      return 'A React error occurred. Please refresh the page and try again.';
+      const errorCode = error.match(/#(\d+)/)?.[1];
+      return getReactErrorMessage(errorCode);
     }
     return error;
   }
@@ -34,23 +35,17 @@ export function getErrorMessage(error: unknown): string {
     // Handle React minified errors (e.g., #185, #321)
     if (message.includes('Minified React error')) {
       const errorCode = message.match(/#(\d+)/)?.[1];
-      if (errorCode === '185') {
-        return 'Invalid hook call detected. The application encountered a configuration error. Please refresh the page.';
-      }
-      if (errorCode === '321') {
-        return 'Maximum update depth exceeded. The application encountered a loop. Please refresh the page.';
-      }
-      return `A React error occurred (code ${errorCode || 'unknown'}). Please refresh the page and try again.`;
+      return getReactErrorMessage(errorCode);
     }
     
     // Handle "Maximum update depth exceeded"
     if (message.includes('Maximum update depth exceeded')) {
-      return 'The application encountered an infinite loop. Please refresh the page.';
+      return 'The application encountered an infinite loop. Please reload the page to continue.';
     }
     
     // Handle "Invalid hook call"
     if (message.includes('Invalid hook call')) {
-      return 'Invalid hook call detected. The application encountered a configuration error. Please refresh the page.';
+      return 'Invalid React hook usage detected. Hooks must be called at the top level of React components. Please reload the page.';
     }
     
     return message;
@@ -67,22 +62,41 @@ export function getErrorMessage(error: unknown): string {
     
     // Handle React minified errors
     if (message.includes('Minified React error')) {
-      return 'A React error occurred. Please refresh the page and try again.';
+      const errorCode = message.match(/#(\d+)/)?.[1];
+      return getReactErrorMessage(errorCode);
     }
     
     // Handle "Maximum update depth exceeded"
     if (message.includes('Maximum update depth exceeded')) {
-      return 'The application encountered an infinite loop. Please refresh the page.';
+      return 'The application encountered an infinite loop. Please reload the page to continue.';
     }
     
     // Handle "Invalid hook call"
     if (message.includes('Invalid hook call')) {
-      return 'Invalid hook call detected. The application encountered a configuration error. Please refresh the page.';
+      return 'Invalid React hook usage detected. Hooks must be called at the top level of React components. Please reload the page.';
     }
     
     return message;
   }
 
   // Fallback for other types - avoid toString() which might fail
-  return 'An unexpected error occurred. Please refresh the page and try again.';
+  return 'An unexpected error occurred. Please reload the page and try again.';
+}
+
+/**
+ * Returns a user-friendly message for common React error codes
+ */
+function getReactErrorMessage(errorCode: string | undefined): string {
+  switch (errorCode) {
+    case '185':
+      return 'Invalid React hook usage detected. Hooks must be called at the top level of React components. Please reload the page.';
+    case '321':
+      return 'Maximum update depth exceeded. The application encountered an infinite loop. Please reload the page.';
+    case '418':
+      return 'React context provider is missing. Please reload the page.';
+    case '425':
+      return 'React rendering error. Please reload the page.';
+    default:
+      return `A React error occurred${errorCode ? ` (code #${errorCode})` : ''}. Please reload the page and try again.`;
+  }
 }

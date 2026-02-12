@@ -1,5 +1,4 @@
-// Demo/Preview Mode session management with event-based change notifications
-// Stores demo session state in localStorage for persistence across page refreshes
+// Demo/Preview Mode session management with hardened error handling for corrupted storage
 
 import type { StaffRole } from '../backend';
 
@@ -27,9 +26,13 @@ export function setDemoSession(role: StaffRole): void {
     role,
     timestamp: Date.now(),
   };
-  localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(session));
-  // Dispatch custom event for reactive updates
-  window.dispatchEvent(new CustomEvent(DEMO_CHANGE_EVENT));
+  try {
+    localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(session));
+    // Dispatch custom event for reactive updates
+    window.dispatchEvent(new CustomEvent(DEMO_CHANGE_EVENT));
+  } catch (error) {
+    console.error('Failed to set demo session:', error);
+  }
 }
 
 export function getDemoSession(): DemoSession | null {
@@ -41,19 +44,28 @@ export function getDemoSession(): DemoSession | null {
     
     // Validate that the session has all required fields
     if (!parsed || typeof parsed.active !== 'boolean' || !parsed.role) {
+      // Clear corrupted session
+      clearDemoSession();
       return null;
     }
     
     return parsed;
-  } catch {
+  } catch (error) {
+    // Clear corrupted session on parse error
+    console.error('Failed to parse demo session, clearing:', error);
+    clearDemoSession();
     return null;
   }
 }
 
 export function clearDemoSession(): void {
-  localStorage.removeItem(DEMO_SESSION_KEY);
-  // Dispatch custom event for reactive updates
-  window.dispatchEvent(new CustomEvent(DEMO_CHANGE_EVENT));
+  try {
+    localStorage.removeItem(DEMO_SESSION_KEY);
+    // Dispatch custom event for reactive updates
+    window.dispatchEvent(new CustomEvent(DEMO_CHANGE_EVENT));
+  } catch (error) {
+    console.error('Failed to clear demo session:', error);
+  }
 }
 
 export function isDemoActive(): boolean {

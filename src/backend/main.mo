@@ -13,9 +13,6 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Runtime "mo:core/Runtime";
 
-
-// Specify the migration module in the with-clause
-
 actor {
   include MixinStorage();
 

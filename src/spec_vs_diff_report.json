@@ -1,57 +1,24 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T05:31:09.377Z",
-  "summary": "Implemented single-run redirect guards in IndexGatePage and AppLayout, updated NotificationsBell to show a demo-mode empty state, and refactored useGetCallerUserProfile to avoid hook usage inside queryFn. Added a getErrorMessage utility for more readable error messages, but the diff does not show wiring this into the global error boundary or React Query provider/query-client consistency changes.",
+  "generatedAt": "2026-02-12T07:33:52.904Z",
+  "summary": "Diff shows targeted frontend changes in AdminDashboardPage to stabilize derived values with useMemo, and enhancements to GlobalErrorBoundary to surface clearer React minified error messaging and preserve raw error/context. Based on the truncated diff, REQ-2 appears implemented, while REQ-1’s root-cause fix cannot be fully verified from the provided evidence (no explicit demonstration of removing the invalid hook call source beyond memoization changes).",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Refactor `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` so it does not call `useActor()` (or any hook) inside a non-hook function/queryFn; ensure all callers use the safe `useGetCallerUserProfile()` hook (or equivalent safe implementation).",
-      "reason": "The diff shows an updated `useGetCallerUserProfile()` implementation, but does not show `getCallerUserProfileQuery()` being refactored/removed or callers being migrated away from it. Because the file content is truncated, there is insufficient evidence that `getCallerUserProfileQuery()` no longer exists or is no longer used.",
+      "id": "REQ-1",
+      "requirement": "Identify and fix the root cause of the initial-load crash on the Admin page that triggers “Minified React error #185” (invalid hook call), so the app renders the Admin dashboard successfully on first load.",
+      "reason": "AdminDashboardPage was modified to memoize schoolIds and computed totals, but the diff summary does not show the actual root cause of the invalid hook call (e.g., a hook previously called at module scope / in a non-hook function / conditionally) being removed or corrected. With only the shown changes, it’s not possible to confirm the crash is eliminated and that all hooks on the Admin initial render path now comply with the Rules of Hooks.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Ensure the app uses a single QueryClient instance and that the TanStack Router context uses the same instance as QueryClientProvider (no double QueryClientProvider nesting, no mismatched instances).",
-      "reason": "No changes are shown to the app root/provider setup or router context wiring. The immutable paths include `frontend/src/main.tsx`, and there is no diff evidence of any alternative provider consolidation elsewhere.",
-      "evidence": [
-        "File diff summary shows no changes to provider/bootstrap files; immutable constraint includes frontend/src/main.tsx"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Improve the global error fallback to show a human-readable error message and any available stack/component-stack details, and provide a safe path back to \"/login\".",
-      "reason": "A new/updated `getErrorMessage` utility exists, but the diff does not show any changes to the global error boundary/fallback UI to display stack/component-stack or a return-to-login action. Therefore the acceptance criteria for the global error screen are not evidenced by the diff.",
-      "evidence": [
-        "frontend/src/utils/getErrorMessage.ts"
+        "frontend/src/pages/dashboards/AdminDashboardPage.tsx (truncated)"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Added/modified multiple module pages and UI/UX enhancements (e.g., audit log viewer, packing editor styling, training dialogs, global button styling) that go beyond the stated goal of restoring demo/auth flows and fixing the crash.",
-      "reason": "These appear as new or enhanced business/UI features not requested by REQ-1..REQ-6 and may violate the non-goal of not adding new business features beyond restoring demo/auth and fixing the crash.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated)"
-      ]
-    },
-    {
-      "description": "Demo-mode local persistence and data-store expansions (localStorage persistence across multiple modules, BigInt-safe serialization, additional demo entities).",
-      "reason": "REQ-4 asks for demo mode to work without backend availability, but the diff summary suggests broader new demo persistence/data capabilities across modules that were not explicitly requested.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated)"
-      ]
-    }
-  ],
-  "confidence": 0.62,
+  "hallucinated_features": [],
+  "confidence": 0.58,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/notifications/NotificationsBell.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/IndexGatePage.tsx",
+    "frontend/src/components/error/GlobalErrorBoundary.tsx",
+    "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
     "frontend/src/utils/getErrorMessage.ts",
     "project_state.json"
   ]

@@ -1,146 +1,62 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Restore stable production routing and demo/auth flows; eliminate React #185 crash",
+  "title": "Fix Admin initial-load invalid hook crash & improve error boundary diagnostics",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Stop runtime crash on \"/\" and ensure deterministic single-redirect to /login or correct dashboard based on auth/demo state.",
+      "summary": "Eliminate the Admin first-load crash by fixing the invalid React hook call in the Admin initial render path so the Admin dashboard renders successfully as the first route.",
       "acceptanceCriteria": [
-        "Loading the production build at \"/\" does not crash and does not render the global error boundary fallback.",
-        "When not authenticated and not in demo mode, \"/\" redirects to \"/login\" exactly once (no navigation loop).",
-        "When demo mode is active, \"/\" redirects to the demo role dashboard exactly once (no navigation loop)."
+        "Opening the app when the Admin page is the first route no longer shows the GlobalErrorBoundary screen.",
+        "No “Minified React error #185” appears in the UI or browser console during initial load.",
+        "All React hooks used by the Admin initial render path are invoked only inside valid React function components or custom hooks (no hooks executed at module scope, inside non-component functions, or conditionally in a way that violates the Rules of Hooks)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/IndexGatePage.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Harden the index-gate redirect logic to be production-safe: ensure it only navigates when the destination differs from the current route, always uses replace: true, and never triggers more than once per mount (keep/extend the existing hasNavigated guard)."
+          "description": "Audit the app bootstrap composition (Router + React Query + error boundary) to ensure no route component (including Admin) is ever rendered outside the Router provider, and that any router/query client creation is stable and not causing invalid hook call conditions during initial navigation to an Admin route."
         },
         {
           "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Ensure the \"/\" route continues to render IndexGatePage and does not introduce competing redirect logic in route guards that could race with IndexGatePage (keep demo routing decisions centralized to avoid double redirects)."
+          "description": "Review Admin route wiring to ensure the initial Admin render path does not evaluate any hook-using code outside of React components (e.g., avoid executing component logic at module initialization; keep route definitions purely declarative)."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Adjust app wiring so initial render at \"/\" has stable providers/router context (remove any provider/context conflicts that can surface as the global error screen)."
+          "description": "Harden initial-load logic so auth/profile gating cannot trigger invalid render paths during the first paint on an Admin route (e.g., ensure navigation side-effects do not cause premature rendering of protected content before required context is ready)."
+        },
+        {
+          "path": "frontend/src/pages/dashboards/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Validate and adjust Admin dashboard initial queries/derived computations to ensure hooks are used only at the top level of the component and are not invoked conditionally via helper invocations or module-scope execution in the Admin initial render path."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit hooks used by the Admin dashboard path to ensure they follow the Rules of Hooks and do not execute hook logic indirectly at module scope; refactor any Admin-critical query helpers if they can evaluate hook code outside component/custom-hook context."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Remove invalid hook usage by refactoring getCallerUserProfileQuery to avoid calling hooks in non-hook/query functions and migrate callers to safe patterns.",
+      "summary": "Improve GlobalErrorBoundary “Technical Details” to show actionable diagnostics for React #185 (raw message + component stack when available) without causing secondary crashes, keeping user-facing text in English.",
       "acceptanceCriteria": [
-        "No code path calls `useActor()` (or any React hook) from inside `queryFn` or any non-hook utility function.",
-        "The app does not emit \"Invalid hook call\" / \"Maximum update depth\" / React minified error #185 errors when loading \"/\" or \"/login\".",
-        "`useGetCallerUserProfile()` continues to work for non-demo Internet Identity logins and remains disabled in demo mode."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Refactor `getCallerUserProfileQuery()` so it does not call `useActor()` (or any hook) within `queryFn` or any non-hook function; replace with either (a) a pure queryOptions factory that receives required dependencies (e.g., actor) as arguments, or (b) remove usage entirely in favor of `useGetCallerUserProfile()`. Update exports accordingly."
-        },
-        {
-          "path": "frontend/src/pages/LoginPage.tsx",
-          "operation": "modify",
-          "description": "Ensure login flow relies on `useGetCallerUserProfile()` (or a safe, dependency-injected query) and does not import/use the unsafe `getCallerUserProfileQuery()` pattern anywhere in the login redirect logic."
-        },
-        {
-          "path": "frontend/src/pages/IndexGatePage.tsx",
-          "operation": "modify",
-          "description": "Ensure the index gate uses only `useGetCallerUserProfile()` (or a safe, dependency-injected query implementation) and does not rely on any query function that calls hooks internally."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Prevent navigation/update loops by adding a single-run redirect guard in AppLayout and ensuring redirects use replace and only happen when needed.",
-      "acceptanceCriteria": [
-        "When the user is unauthenticated (non-demo), protected routes redirect to \"/login\" without repeated re-renders or repeated navigation attempts.",
-        "When the user is authenticated but has no profile, the app redirects to \"/login\" without repeated re-renders or repeated navigation attempts.",
-        "No console errors indicating infinite update loops occur during redirects."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
-          "operation": "modify",
-          "description": "Add a single-run navigation guard (similar to IndexGatePage's hasNavigated ref) for redirect side-effects. Ensure redirects use `replace: true` and only trigger when the current route is not already the destination, to prevent repeated navigations/Maximum update depth issues."
-        },
-        {
-          "path": "frontend/src/pages/LoginPage.tsx",
-          "operation": "modify",
-          "description": "Ensure demo/identity auto-navigation from LoginPage uses `replace: true` where appropriate and avoids triggering navigation when already on the destination route, preventing loops between /login and protected layout."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Make Demo Mode fully functional without actor/backend by ensuring all React Query hooks used in layout/dashboards are demo-safe (disabled or return demo values) when demo mode is active.",
-      "acceptanceCriteria": [
-        "Using Demo Sign In on `LoginPage` (admin/demo123) navigates to the admin dashboard and renders without triggering any backend calls that require an actor.",
-        "Demo mode pages render without throwing \"Actor not available\" errors.",
-        "Common layout elements (e.g., notifications bell) do not crash in demo mode and display demo-safe empty states."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Audit and update all React Query hooks so demo mode does not require an actor: for queries with demo fallbacks, make `enabled` true in demo mode even when actor is unavailable; for queries/mutations without demo implementations but reachable from demo UI (e.g., staff/admin screens), either disable them in demo mode or return demo-safe empty values to prevent 'Actor not available' errors."
-        },
-        {
-          "path": "frontend/src/components/notifications/NotificationsBell.tsx",
-          "operation": "modify",
-          "description": "Ensure the notifications UI gracefully handles demo mode empty states and never triggers backend-required actions when demo is active (it should remain stable even when hooks return empty arrays / disabled state). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
-          "operation": "modify",
-          "description": "Ensure layout-level behavior in demo mode does not depend on backend profile queries/actor availability (use demo profile when active, and avoid redirects or rendering states that assume actor-backed queries). Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Use exactly one QueryClientProvider at runtime and ensure TanStack Router context uses the same QueryClient instance.",
-      "acceptanceCriteria": [
-        "There is exactly one `QueryClientProvider` wrapping the app at runtime.",
-        "The `QueryClient` instance passed to TanStack Router context is the same instance used by `QueryClientProvider`.",
-        "The production build no longer crashes on initial load due to provider/context conflicts."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Remove nested/double `QueryClientProvider` usage and stop constructing a separate QueryClient here. Instead, obtain the existing QueryClient from the (immutable) top-level provider via `useQueryClient()` and pass that same instance into the TanStack Router context to keep provider/context consistent."
-        },
-        {
-          "path": "frontend/src/routeTree.tsx",
-          "operation": "modify",
-          "description": "Ensure router context typing remains compatible with providing the QueryClient sourced from the single runtime provider; keep context wiring stable to avoid mismatched instances."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Enhance global error fallback to display actionable English error details (message + stack/component stack when available) and provide a safe path back to /login.",
-      "acceptanceCriteria": [
-        "When an error is thrown, the global error screen displays: (1) a human-readable error message, and (2) stack and/or component stack when available.",
-        "User-facing error UI text is in English.",
-        "The error screen still provides a safe path to return to \"/login\"."
+        "When an error occurs, the error boundary still renders without throwing additional errors.",
+        "Clicking “Technical Details” reveals the component stack (when available) and does not break the page.",
+        "User-facing error boundary strings remain in English."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/error/GlobalErrorBoundary.tsx",
           "operation": "modify",
-          "description": "Improve the fallback UI content to be more actionable in production: ensure the rendered view always includes a clear human-readable message (using getErrorMessage), and renders stack and/or component stack sections when present (optionally expanded by default). Keep all user-facing text in English and retain a safe navigation path to \"/login\". Verify the component's usage instructions before implementing."
+          "description": "Enhance the error boundary details panel to safely render: raw error name/message, best-effort component stack, and stack trace, with defensive guards so the Technical Details toggle never throws even when fields are missing or non-standard."
         },
         {
           "path": "frontend/src/utils/getErrorMessage.ts",
           "operation": "modify",
-          "description": "Extend error-message extraction to better handle production/minified React errors and common runtime failures (while preserving existing BigInt-safe handling), so the global fallback presents meaningful guidance instead of only a minified code."
+          "description": "Improve error message extraction for React #185/invalid hook call scenarios by preserving the raw error message when available, handling non-Error throws safely, and avoiding any formatting that could itself throw."
         }
       ]
     }

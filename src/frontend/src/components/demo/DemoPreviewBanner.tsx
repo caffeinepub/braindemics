@@ -36,8 +36,8 @@ export default function DemoPreviewBanner() {
     setRole(newRole);
     // Invalidate profile query to trigger re-render
     queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    // Navigate to the new role's dashboard
-    navigate({ to: getDashboardRoute(newRole) });
+    // Navigate to the new role's dashboard using replace to avoid history stack issues
+    navigate({ to: getDashboardRoute(newRole), replace: true });
   };
 
   const handleDismissWarning = () => {

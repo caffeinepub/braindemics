@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, queryOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { isDemoActive } from '../demo/demoSession';
 import {
@@ -42,21 +42,6 @@ import type { Principal } from '@icp-sdk/core/principal';
 // ============================================================================
 // USER PROFILE QUERIES
 // ============================================================================
-
-export const getCallerUserProfileQuery = () =>
-  queryOptions({
-    queryKey: ['currentUserProfile'],
-    queryFn: async () => {
-      if (isDemoActive()) {
-        return null;
-      }
-      const actorModule = await import('./useActor');
-      const { actor } = actorModule.useActor();
-      if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
-    },
-    retry: false,
-  });
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -109,7 +94,7 @@ export function useListAllStaff() {
       if (!actor) throw new Error('Actor not available');
       return actor.listAllStaff();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && !isDemoActive(),
   });
 }
 
@@ -202,7 +187,7 @@ export function useListAllSchools() {
       if (!actor) throw new Error('Actor not available');
       return actor.listAllSchools();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isDemoActive() || (!!actor && !actorFetching),
   });
 }
 
@@ -221,7 +206,7 @@ export function useGetSchool(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.getSchool(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
   });
 }
 
@@ -399,7 +384,7 @@ export function useGetOutstandingAmount(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.getOutstandingAmount(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
   });
 }
 
@@ -416,7 +401,7 @@ export function useGetOutstandingAmountsBySchoolIds(schoolIds: string[]) {
       if (!actor) throw new Error('Actor not available');
       return actor.getOutstandingAmountsBySchoolIds(schoolIds);
     },
-    enabled: !!actor && !actorFetching && schoolIds.length > 0,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && schoolIds.length > 0,
   });
 }
 
@@ -459,7 +444,7 @@ export function useGetPackingStatus(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.getPackingStatus(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
     retry: false,
   });
 }
@@ -477,7 +462,7 @@ export function useGetPackingCountsBySchool(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.getPackingCountsBySchool(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
   });
 }
 
@@ -493,7 +478,7 @@ export function useListAllPackingStatuses() {
       if (!actor) throw new Error('Actor not available');
       return actor.listAllPackingStatuses();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isDemoActive() || (!!actor && !actorFetching),
   });
 }
 
@@ -584,7 +569,7 @@ export function useListTrainingVisitsBySchool(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.listTrainingVisitsBySchool(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
   });
 }
 
@@ -604,8 +589,7 @@ export function useCreateTrainingVisit() {
     }) => {
       if (isDemoActive()) {
         canPerformAction('createTrainingVisit');
-        createDemoTrainingVisit(params);
-        return 'demo-visit-id';
+        return createDemoTrainingVisit(params);
       }
       if (!actor) throw new Error('Actor not available');
       return actor.createTrainingVisit(
@@ -678,7 +662,7 @@ export function useListAllAcademicQueries() {
       if (!actor) throw new Error('Actor not available');
       return actor.listAllAcademicQueries();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isDemoActive() || (!!actor && !actorFetching),
   });
 }
 
@@ -695,7 +679,7 @@ export function useListAcademicQueriesBySchool(schoolId: string) {
       if (!actor) throw new Error('Actor not available');
       return actor.listAcademicQueriesBySchool(schoolId);
     },
-    enabled: !!actor && !actorFetching && !!schoolId,
+    enabled: (isDemoActive() || (!!actor && !actorFetching)) && !!schoolId,
   });
 }
 
@@ -707,8 +691,7 @@ export function useCreateAcademicQuery() {
     mutationFn: async (params: { schoolId: string; queries: string }) => {
       if (isDemoActive()) {
         canPerformAction('createAcademicQuery');
-        createDemoAcademicQuery(params);
-        return 'demo-query-id';
+        return createDemoAcademicQuery(params);
       }
       if (!actor) throw new Error('Actor not available');
       return actor.createAcademicQuery(params.schoolId, params.queries);
@@ -740,7 +723,7 @@ export function useRespondToAcademicQuery() {
 }
 
 // ============================================================================
-// AUDIT LOG QUERIES
+// AUDIT LOG QUERIES (Admin only, no demo support)
 // ============================================================================
 
 export function useListAllAuditLogs() {
@@ -752,7 +735,7 @@ export function useListAllAuditLogs() {
       if (!actor) throw new Error('Actor not available');
       return actor.listAllAuditLogs();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && !isDemoActive(),
   });
 }
 
@@ -765,12 +748,12 @@ export function useGetFilteredAuditLogs(criteria: FilterCriteria) {
       if (!actor) throw new Error('Actor not available');
       return actor.getFilteredAuditLogs(criteria);
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !actorFetching && !isDemoActive(),
   });
 }
 
 // ============================================================================
-// CONSOLIDATED SCHOOL DETAILS (Admin only)
+// CONSOLIDATED SCHOOL DETAILS (Admin only, no demo support)
 // ============================================================================
 
 export function useGetConsolidatedSchoolDetails(schoolId: string) {
@@ -779,9 +762,6 @@ export function useGetConsolidatedSchoolDetails(schoolId: string) {
   return useQuery<ConsolidatedSchoolModuleData | null>({
     queryKey: ['consolidatedSchoolDetails', schoolId],
     queryFn: async () => {
-      if (isDemoActive()) {
-        return null;
-      }
       if (!actor) throw new Error('Actor not available');
       return actor.getConsolidatedSchoolDetails(schoolId);
     },

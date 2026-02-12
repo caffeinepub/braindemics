@@ -1,13 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the deployed app’s blank white screen by making routing/auth gating deterministic, using a single React Query client, and ensuring the UI always shows a login/loading/error state instead of rendering nothing.
+**Goal:** Restore a stable production build and working Demo Mode by fixing the main-route crash (Minified React error #185), eliminating invalid hook usage, and preventing redirect loops.
 
 **Planned changes:**
-- Ensure the app renders a visible UI state at `"/"` and protected routes (login, loading indicator, or error state) instead of a blank page.
-- Refactor `frontend/src/routeTree.tsx` to remove React Query profile fetching from `beforeLoad`; keep only demo-session routing decisions there and move non-demo auth/profile checks into UI components.
-- Update `frontend/src/components/layout/AppLayout.tsx` to never return `null`; when profile is missing (and not in demo mode), navigate to `"/login"` and show a minimal fallback while navigating.
-- Use exactly one React Query `QueryClient` instance for both the React Query provider and the TanStack Router context (avoid multiple instances across app setup).
-- Add a simple global client-side error fallback that shows an English error panel with a “Go to Login” action instead of a blank white screen.
+- Fix the runtime crash on `"/"` so it reliably redirects once to `"/login"` when unauthenticated (non-demo) or to the correct role dashboard when authenticated or in Demo Mode.
+- Refactor `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` to remove invalid hook usage (no hooks called inside `queryFn`/non-hook functions) and ensure callers use `useGetCallerUserProfile()` (or an equivalent safe, dependency-injected query approach).
+- Add a single-run navigation guard in `frontend/src/components/layout/AppLayout.tsx` to prevent repeated redirect side-effects; use `replace: true` and only redirect when not already on the destination route.
+- Ensure Demo Mode runs end-to-end without actor/backend availability by disabling or returning demo-safe values from React Query hooks used in dashboards and shared layout elements (including notifications) when `isDemoActive()` is true.
+- Ensure a single, consistent React Query setup: exactly one `QueryClientProvider`, and the same `QueryClient` instance used across provider and router context wiring.
+- Improve the global error fallback to show an actionable English error message plus available stack/component-stack details, and provide a safe path back to `"/login"`.
 
-**User-visible outcome:** Opening the deployed app at `"/"` shows the login page, a loading indicator, or an error panel within 1 second (never blank). Protected routes reliably redirect unauthenticated users to `"/login"`, and demo mode routes to the correct demo dashboard with visible content.
+**User-visible outcome:** Opening the production build no longer crashes on `"/"`; users are redirected correctly without loops, Demo Sign In (admin/demo123) works without backend/actor errors, and unexpected errors show a helpful English message with debugging details and a way back to login.

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,55 +8,54 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useGetNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../hooks/useQueries';
-import { format } from 'date-fns';
+import { useDemoPreview } from '../../demo/useDemoPreview';
 
 export default function NotificationsBell() {
+  const { isDemo } = useDemoPreview();
   const { data: notifications = [], isLoading } = useGetNotifications();
-  const markAsReadMutation = useMarkNotificationAsRead();
-  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
-  const [open, setOpen] = useState(false);
+  const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
+
+  // In demo mode, show empty state
+  if (isDemo) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            No notifications in demo mode
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   const unreadCount = notifications.length;
 
-  const handleMarkAsRead = async (notificationId: string) => {
-    try {
-      await markAsReadMutation.mutateAsync(notificationId);
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
+  const handleMarkAsRead = (notificationId: string) => {
+    markAsRead.mutate(notificationId);
   };
 
-  const handleMarkAllAsRead = async () => {
-    try {
-      await markAllAsReadMutation.mutateAsync();
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
-    }
-  };
-
-  const formatTimestamp = (timestamp: bigint) => {
-    try {
-      return format(Number(timestamp) / 1000000, 'MMM dd, HH:mm');
-    } catch {
-      return 'Recently';
-    }
+  const handleMarkAllAsRead = () => {
+    markAllAsRead.mutate();
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
@@ -69,33 +67,36 @@ export default function NotificationsBell() {
               variant="ghost"
               size="sm"
               onClick={handleMarkAllAsRead}
-              disabled={markAllAsReadMutation.isPending}
               className="h-auto p-1 text-xs"
             >
-              Mark all read
+              Mark all as read
             </Button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {isLoading ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Loading notifications...
+          </div>
         ) : unreadCount === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">No new notifications</div>
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            No new notifications
+          </div>
         ) : (
-          <ScrollArea className="h-[300px]">
+          <div className="max-h-96 overflow-y-auto">
             {notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
                 className="flex flex-col items-start p-3 cursor-pointer"
                 onClick={() => handleMarkAsRead(notification.id)}
               >
-                <p className="text-sm font-medium">{notification.content}</p>
+                <p className="text-sm">{notification.content}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formatTimestamp(notification.timestamp)}
+                  {new Date(Number(notification.timestamp) / 1000000).toLocaleString()}
                 </p>
               </DropdownMenuItem>
             ))}
-          </ScrollArea>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

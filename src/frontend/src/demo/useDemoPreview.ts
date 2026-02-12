@@ -1,25 +1,32 @@
-// Hook to manage Demo/Preview Mode state and operations
+// Hook to manage Demo/Preview Mode state and operations with reactive updates
 
-import { useCallback } from 'react';
-import { getDemoSession, setDemoSession, clearDemoSession, isDemoActive } from './demoSession';
+import { useCallback, useSyncExternalStore } from 'react';
+import { 
+  getDemoSession, 
+  setDemoSession, 
+  clearDemoSession, 
+  isDemoActive,
+  subscribeToDemoChanges 
+} from './demoSession';
 import type { StaffRole } from '../backend';
 
 export function useDemoPreview() {
-  const session = getDemoSession();
+  // Use useSyncExternalStore for reactive updates when demo session changes
+  const session = useSyncExternalStore(
+    subscribeToDemoChanges,
+    getDemoSession,
+    getDemoSession
+  );
 
-  const isDemo = isDemoActive();
+  const isDemo = session?.active === true && !!session?.role;
   const currentRole = session?.role || null;
 
   const setRole = useCallback((role: StaffRole) => {
     setDemoSession(role);
-    // Trigger a storage event to notify other components
-    window.dispatchEvent(new Event('storage'));
   }, []);
 
   const exitDemo = useCallback(() => {
     clearDemoSession();
-    // Trigger a storage event to notify other components
-    window.dispatchEvent(new Event('storage'));
   }, []);
 
   return {

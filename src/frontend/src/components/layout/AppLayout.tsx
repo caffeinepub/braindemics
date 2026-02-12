@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Outlet, useNavigate } from '@tanstack/react-router';
+import { useEffect, useRef } from 'react';
+import { Outlet, useNavigate, useRouter } from '@tanstack/react-router';
 import { useGetCallerUserProfile } from '../../hooks/useQueries';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,35 +15,48 @@ import {
 } from '@/components/ui/dropdown-menu';
 import DemoPreviewBanner from '../demo/DemoPreviewBanner';
 import NotificationsBell from '../notifications/NotificationsBell';
-import { isDemoActive, getDemoRole } from '../../demo/demoSession';
+import { useDemoPreview } from '../../demo/useDemoPreview';
 import { createDemoProfile } from '../../demo/demoProfile';
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { clear, identity } = useInternetIdentity();
   const { data: profile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-  const isDemo = isDemoActive();
+  const { isDemo, currentRole } = useDemoPreview();
+  const hasNavigated = useRef(false);
 
   // Get the effective profile (demo or real)
-  const effectiveProfile = isDemo && getDemoRole() ? createDemoProfile(getDemoRole()!) : profile;
+  const effectiveProfile = isDemo && currentRole ? createDemoProfile(currentRole) : profile;
 
   useEffect(() => {
+    // Prevent multiple navigation attempts
+    if (hasNavigated.current) return;
+
     // If not in demo mode and no identity, redirect to login
     if (!isDemo && !identity && !profileLoading) {
-      navigate({ to: '/login' });
+      if (router.state.location.pathname !== '/login') {
+        hasNavigated.current = true;
+        navigate({ to: '/login', replace: true });
+      }
+      return;
     }
 
     // If not in demo mode, identity exists, profile is fetched but null, redirect to login
     if (!isDemo && identity && isFetched && !profile) {
-      navigate({ to: '/login' });
+      if (router.state.location.pathname !== '/login') {
+        hasNavigated.current = true;
+        navigate({ to: '/login', replace: true });
+      }
+      return;
     }
-  }, [isDemo, identity, profile, profileLoading, isFetched, navigate]);
+  }, [isDemo, identity, profile, profileLoading, isFetched, navigate, router.state.location.pathname]);
 
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
-    navigate({ to: '/login' });
+    navigate({ to: '/login', replace: true });
   };
 
   const roleRoutes: Record<string, { label: string; path: string }[]> = {

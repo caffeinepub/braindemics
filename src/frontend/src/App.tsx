@@ -4,6 +4,7 @@ import { routeTree } from './routeTree';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import GlobalErrorBoundary from './components/error/GlobalErrorBoundary';
+import { useMemo } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,26 +15,31 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createRouter({
-  routeTree,
-  context: {
-    queryClient,
-  },
-  defaultPreload: 'intent',
-});
-
 declare module '@tanstack/react-router' {
   interface Register {
-    router: typeof router;
+    router: ReturnType<typeof createRouter<typeof routeTree>>;
   }
 }
 
 export default function App() {
+  // Create router inside component to ensure QueryClient is available
+  const router = useMemo(
+    () =>
+      createRouter({
+        routeTree,
+        context: {
+          queryClient,
+        },
+        defaultPreload: 'intent',
+      }),
+    []
+  );
+
   return (
     <GlobalErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} context={{ queryClient }} />
+          <RouterProvider router={router} />
           <Toaster />
         </QueryClientProvider>
       </ThemeProvider>

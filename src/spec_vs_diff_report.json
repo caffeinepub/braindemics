@@ -1,60 +1,58 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T04:37:58.581Z",
-  "summary": "Core routing/auth-gating changes appear to address the blank-screen issue by adding an index gate page with a visible loading state, simplifying routeTree beforeLoad to demo-only logic, making AppLayout render safe loading/fallback UIs with redirects to /login, and adding a global error boundary with a Go to Login action. However, the diff does not provide sufficient evidence that there is exactly one QueryClient instance across the whole runtime (main.tsx is immutable and not shown), and there are several additional unrelated feature/UI changes indicated by the file summaries that go beyond the requested blank-screen fix.",
+  "generatedAt": "2026-02-12T05:31:09.377Z",
+  "summary": "Implemented single-run redirect guards in IndexGatePage and AppLayout, updated NotificationsBell to show a demo-mode empty state, and refactored useGetCallerUserProfile to avoid hook usage inside queryFn. Added a getErrorMessage utility for more readable error messages, but the diff does not show wiring this into the global error boundary or React Query provider/query-client consistency changes.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
-      "reason": "The diff shows a QueryClient being created in frontend/src/App.tsx and passed to both QueryClientProvider and the router context, but main.tsx is immutable and not included in the diff; therefore it's not possible to confirm that main.tsx does not also create/provide a separate QueryClient instance. The acceptance criterion requires exactly one runtime instance across the app.",
+      "id": "REQ-2",
+      "requirement": "Refactor `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` so it does not call `useActor()` (or any hook) inside a non-hook function/queryFn; ensure all callers use the safe `useGetCallerUserProfile()` hook (or equivalent safe implementation).",
+      "reason": "The diff shows an updated `useGetCallerUserProfile()` implementation, but does not show `getCallerUserProfileQuery()` being refactored/removed or callers being migrated away from it. Because the file content is truncated, there is insufficient evidence that `getCallerUserProfileQuery()` no longer exists or is no longer used.",
       "evidence": [
-        "frontend/src/App.tsx"
+        "frontend/src/hooks/useQueries.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Ensure the app uses a single QueryClient instance and that the TanStack Router context uses the same instance as QueryClientProvider (no double QueryClientProvider nesting, no mismatched instances).",
+      "reason": "No changes are shown to the app root/provider setup or router context wiring. The immutable paths include `frontend/src/main.tsx`, and there is no diff evidence of any alternative provider consolidation elsewhere.",
+      "evidence": [
+        "File diff summary shows no changes to provider/bootstrap files; immutable constraint includes frontend/src/main.tsx"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Improve the global error fallback to show a human-readable error message and any available stack/component-stack details, and provide a safe path back to \"/login\".",
+      "reason": "A new/updated `getErrorMessage` utility exists, but the diff does not show any changes to the global error boundary/fallback UI to display stack/component-stack or a return-to-login action. Therefore the acceptance criteria for the global error screen are not evidenced by the diff.",
+      "evidence": [
+        "frontend/src/utils/getErrorMessage.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Admin audit log viewer with filtering and sortable table.",
-      "reason": "Not requested by the BuildRequest (non-goal: no new product features beyond fixing blank-screen/deployment usability).",
+      "description": "Added/modified multiple module pages and UI/UX enhancements (e.g., audit log viewer, packing editor styling, training dialogs, global button styling) that go beyond the stated goal of restoring demo/auth flows and fixing the crash.",
+      "reason": "These appear as new or enhanced business/UI features not requested by REQ-1..REQ-6 and may violate the non-goal of not adding new business features beyond restoring demo/auth and fixing the crash.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/pages/admin/AuditLogPage.tsx)"
+        "frontend-file-summaries.txt (truncated)"
       ]
     },
     {
-      "description": "Staff management page with create/update forms, role assignment, staff table, and a 'repair staff permissions' action.",
-      "reason": "Not requested; appears to be feature work unrelated to routing/auth gating and blank-screen fix.",
+      "description": "Demo-mode local persistence and data-store expansions (localStorage persistence across multiple modules, BigInt-safe serialization, additional demo entities).",
+      "reason": "REQ-4 asks for demo mode to work without backend availability, but the diff summary suggests broader new demo persistence/data capabilities across modules that were not explicitly requested.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/pages/admin/StaffManagementPage.tsx)"
-      ]
-    },
-    {
-      "description": "Extensive Demo/Preview Mode data persistence/store updates including BigInt-safe serialization for multiple modules (schools, outstanding amounts, packing, training, academic queries).",
-      "reason": "Not requested; this is substantial new/expanded functionality beyond the specified routing/auth and error fallback fixes.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/demo/demoDataStore.ts)"
-      ]
-    },
-    {
-      "description": "Multiple module page enhancements (packing editor dropdown styling, training dialogs, school details role-based editability, accounts payments editing) and global CSS/button styling changes.",
-      "reason": "Not requested; these are UI/feature changes outside the scope of eliminating the blank white screen and refactoring auth gating/query client usage.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/pages/packing/SchoolPackingPage.tsx)",
-        "frontend-file-summaries.txt (mentions frontend/src/pages/training/SchoolTrainingPage.tsx)",
-        "frontend-file-summaries.txt (mentions frontend/src/pages/schools/SchoolDetailsPage.tsx)",
-        "frontend-file-summaries.txt (mentions frontend/src/pages/accounts/SchoolPaymentsPage.tsx)",
-        "frontend-file-summaries.txt (mentions frontend/src/index.css)"
+        "frontend-file-summaries.txt (truncated)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/error/GlobalErrorBoundary.tsx",
     "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/notifications/NotificationsBell.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/IndexGatePage.tsx",
-    "frontend/src/routeTree.tsx",
+    "frontend/src/utils/getErrorMessage.ts",
     "project_state.json"
   ]
 }

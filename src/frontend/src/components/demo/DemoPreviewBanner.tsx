@@ -32,8 +32,11 @@ export default function DemoPreviewBanner() {
   if (!isDemo || !currentRole) return null;
 
   const handleRoleChange = (newRole: StaffRole) => {
+    // Update role first
     setRole(newRole);
+    // Invalidate profile query to trigger re-render
     queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    // Navigate to the new role's dashboard
     navigate({ to: getDashboardRoute(newRole) });
   };
 

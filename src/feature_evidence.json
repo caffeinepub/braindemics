@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-eliminate-the-blank-white-screen-on-the-deployed-site-by-ensuring-the-app-always-renders-a-visible-ui-state-login-screen-loading-state-or-error-state-at-route-and-protected-routes",
-      "featureTitle": "Eliminate the blank white screen on the deployed site by ensuring the app always renders a visible UI state (login screen, loading state, or error state) at route \"/\" and protected routes.",
+      "featureId": "feature-fix-the-immediate-runtime-crash-on-the-main-route-so-the-app-no-longer-shows-the-global-something-went-wrong-screen-minified-react-error-185-and-instead-reliably-redirects-to-the-correct-page-login-when-not-authenticated-or-the-role-dashboard-when-authenticated-or-in-demo-mode",
+      "featureTitle": "Fix the immediate runtime crash on the main route (\"/\") so the app no longer shows the global \"Something went wrong!\" screen (Minified React error #185) and instead reliably redirects to the correct page (\"/login\" when not authenticated, or the role dashboard when authenticated or in Demo Mode).",
       "files": [
-        "frontend/src/pages/IndexGatePage.tsx",
-        "frontend/src/routeTree.tsx"
+        "frontend/src/pages/IndexGatePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,10 +22,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-refactor-route-level-authentication-logic-in-frontend-src-routetree-tsx-to-avoid-fetching-the-caller-profile-via-react-query-during-route-beforeload-remove-reliance-on-getcalleruserprofilequery-ensurequerydata-there-and-instead-perform-only-demo-session-routing-decisions-in-beforeload-perform-non-demo-auth-profile-checks-in-ui-components-where-hooks-are-valid",
-      "featureTitle": "Refactor route-level authentication logic in frontend/src/routeTree.tsx to avoid fetching the caller profile via React Query during route beforeLoad (remove reliance on getCallerUserProfileQuery/ensureQueryData there), and instead perform only demo-session routing decisions in beforeLoad; perform non-demo auth/profile checks in UI components where hooks are valid.",
+      "featureId": "feature-remove-the-invalid-react-hook-usage-that-can-trigger-minified-react-error-185-by-refactoring-getcalleruserprofilequery-in-frontend-src-hooks-usequeries-ts-so-it-does-not-call-useactor-or-any-hook-inside-a-non-hook-function-queryfn-ensure-all-callers-use-the-safe-usegetcalleruserprofile-hook-or-an-equivalent-non-hook-query-implementation-that-receives-required-dependencies-without-calling-hooks",
+      "featureTitle": "Remove the invalid React hook usage that can trigger Minified React error #185 by refactoring `getCallerUserProfileQuery()` in `frontend/src/hooks/useQueries.ts` so it does not call `useActor()` (or any hook) inside a non-hook function/queryFn; ensure all callers use the safe `useGetCallerUserProfile()` hook (or an equivalent non-hook query implementation that receives required dependencies without calling hooks).",
       "files": [
-        "frontend/src/routeTree.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/IndexGatePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -43,8 +43,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-frontend-src-components-layout-applayout-tsx-so-that-when-profile-is-missing-and-demo-mode-is-not-active-it-renders-a-safe-fallback-that-navigates-to-login-and-or-shows-an-inline-message-rather-than-returning-null",
-      "featureTitle": "Update frontend/src/components/layout/AppLayout.tsx so that when profile is missing (and demo mode is not active), it renders a safe fallback that navigates to \"/login\" (and/or shows an inline message) rather than returning null.",
+      "featureId": "feature-prevent-redirect-update-loops-caused-by-repeated-navigation-side-effects-by-adding-a-single-run-navigation-guard-to-frontend-src-components-layout-applayout-tsx-similar-to-indexgatepage-s-hasnavigated-pattern-and-ensure-redirects-use-replace-true-and-only-trigger-when-the-current-route-is-not-already-the-destination",
+      "featureTitle": "Prevent redirect/update loops caused by repeated navigation side-effects by adding a single-run navigation guard to `frontend/src/components/layout/AppLayout.tsx` (similar to `IndexGatePage`'s `hasNavigated` pattern) and ensure redirects use `replace: true` and only trigger when the current route is not already the destination.",
       "files": [
         "frontend/src/components/layout/AppLayout.tsx"
       ],
@@ -63,10 +63,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-use-a-single-react-query-queryclient-instance-consistently-for-both-the-react-query-provider-and-the-tanstack-router-context-avoid-creating-multiple-queryclient-instances-across-frontend-src-main-tsx-and-frontend-src-app-tsx",
-      "featureTitle": "Use a single React Query QueryClient instance consistently for both the React Query provider and the TanStack Router context (avoid creating multiple QueryClient instances across frontend/src/main.tsx and frontend/src/App.tsx).",
+      "featureId": "feature-ensure-demo-mode-is-fully-functional-without-backend-actor-availability-by-verifying-that-all-react-query-hooks-used-on-dashboards-and-common-layout-components-including-notifications-are-disabled-or-return-demo-safe-values-when-isdemoactive-is-true-so-the-demo-login-flow-works-end-to-end-with-no-runtime-errors",
+      "featureTitle": "Ensure Demo Mode is fully functional without backend/actor availability by verifying that all React Query hooks used on dashboards and common layout components (including notifications) are disabled or return demo-safe values when `isDemoActive()` is true, so the demo login flow works end-to-end with no runtime errors.",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/components/notifications/NotificationsBell.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -83,11 +85,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-simple-global-client-side-error-fallback-so-that-unexpected-render-runtime-errors-show-a-user-visible-error-panel-with-a-go-to-login-action-instead-of-a-blank-white-screen",
-      "featureTitle": "Add a simple global client-side error fallback so that unexpected render/runtime errors show a user-visible error panel with a \"Go to Login\" action instead of a blank white screen.",
+      "featureId": "feature-improve-the-global-error-fallback-so-that-when-an-unexpected-error-still-occurs-in-production-the-ui-shows-an-actionable-error-message-and-any-available-stack-component-stack-details-instead-of-only-a-minified-error-code-while-keeping-user-facing-text-in-english",
+      "featureTitle": "Improve the global error fallback so that when an unexpected error still occurs in production, the UI shows an actionable error message and any available stack/component-stack details (instead of only a minified error code), while keeping user-facing text in English.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/error/GlobalErrorBoundary.tsx"
+        "frontend/src/utils/getErrorMessage.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -99,7 +100,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-5"
+        "REQ-6"
       ],
       "confidence": "high"
     }

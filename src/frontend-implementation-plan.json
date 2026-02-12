@@ -1,92 +1,146 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix blank screen by correcting routing/auth gating, QueryClient wiring, and global error fallback",
+  "title": "Restore stable production routing and demo/auth flows; eliminate React #185 crash",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Ensure the app always renders a visible UI at \"/\" and on protected routes (loading/login/error), avoiding blank screens.",
+      "summary": "Stop runtime crash on \"/\" and ensure deterministic single-redirect to /login or correct dashboard based on auth/demo state.",
       "acceptanceCriteria": [
-        "Opening the deployed app at \"/\" shows either the Login page or a loading indicator within 1 second; it must not remain a blank white screen.",
-        "If the user is not authenticated and demo mode is not active, navigating to any protected route (e.g. \"/admin/dashboard\") reliably redirects to \"/login\" (or displays a clear unauthenticated screen) instead of rendering nothing.",
-        "If demo mode is active, the app navigates to the correct demo dashboard route and renders the layout/content (not blank)."
+        "Loading the production build at \"/\" does not crash and does not render the global error boundary fallback.",
+        "When not authenticated and not in demo mode, \"/\" redirects to \"/login\" exactly once (no navigation loop).",
+        "When demo mode is active, \"/\" redirects to the demo role dashboard exactly once (no navigation loop)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/IndexGatePage.tsx",
-          "operation": "create",
-          "description": "Create a minimal route component for \"/\" that always renders a visible state immediately (spinner/placeholder), then performs deterministic navigation: demo session -> demo dashboard; otherwise if not authenticated/profile missing -> navigate to \"/login\"; otherwise -> role dashboard. Use the authorization component guidance for authenticated-vs-guest UI expectations and cache-clearing behavior where applicable. Verify the component's usage instructions before implementing."
+          "operation": "modify",
+          "description": "Harden the index-gate redirect logic to be production-safe: ensure it only navigates when the destination differs from the current route, always uses replace: true, and never triggers more than once per mount (keep/extend the existing hasNavigated guard)."
         },
         {
           "path": "frontend/src/routeTree.tsx",
           "operation": "modify",
-          "description": "Wire \"/\" to render IndexGatePage (component-based gating) so the route always paints UI while routing decisions occur. Ensure protected routes are nested under the authenticated layout so unauthenticated users see a redirect/fallback rather than nothing."
+          "description": "Ensure the \"/\" route continues to render IndexGatePage and does not introduce competing redirect logic in route guards that could race with IndexGatePage (keep demo routing decisions centralized to avoid double redirects)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Adjust app wiring so initial render at \"/\" has stable providers/router context (remove any provider/context conflicts that can surface as the global error screen)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Refactor routeTree auth gating to remove React Query profile fetching in beforeLoad; keep only demo-mode routing in beforeLoad and move non-demo checks into UI components.",
+      "summary": "Remove invalid hook usage by refactoring getCallerUserProfileQuery to avoid calling hooks in non-hook/query functions and migrate callers to safe patterns.",
       "acceptanceCriteria": [
-        "frontend/src/routeTree.tsx no longer calls queryClient.ensureQueryData(getCallerUserProfileQuery()) in beforeLoad for \"/\" and the authenticated route gate.",
-        "When not in demo mode, visiting \"/\" results in a deterministic UI path (loading -> redirect/login) without route-load deadlocks.",
-        "Demo mode routing at \"/\" still redirects to the demo dashboard returned by getDashboardRoute(getDemoRole())."
+        "No code path calls `useActor()` (or any React hook) from inside `queryFn` or any non-hook utility function.",
+        "The app does not emit \"Invalid hook call\" / \"Maximum update depth\" / React minified error #185 errors when loading \"/\" or \"/login\".",
+        "`useGetCallerUserProfile()` continues to work for non-demo Internet Identity logins and remains disabled in demo mode."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/routeTree.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Remove queryClient.ensureQueryData(getCallerUserProfileQuery()) usage from both the authenticated route beforeLoad and the index route beforeLoad. Keep only demo-session decisions in beforeLoad (e.g., demo role -> redirect to getDashboardRoute(getDemoRole())). Shift non-demo auth/profile decisions to IndexGatePage and AppLayout (where hooks are valid)."
+          "description": "Refactor `getCallerUserProfileQuery()` so it does not call `useActor()` (or any hook) within `queryFn` or any non-hook function; replace with either (a) a pure queryOptions factory that receives required dependencies (e.g., actor) as arguments, or (b) remove usage entirely in favor of `useGetCallerUserProfile()`. Update exports accordingly."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Ensure login flow relies on `useGetCallerUserProfile()` (or a safe, dependency-injected query) and does not import/use the unsafe `getCallerUserProfileQuery()` pattern anywhere in the login redirect logic."
+        },
+        {
+          "path": "frontend/src/pages/IndexGatePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the index gate uses only `useGetCallerUserProfile()` (or a safe, dependency-injected query implementation) and does not rely on any query function that calls hooks internally."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Prevent AppLayout from returning null when profile is missing; render a safe fallback and navigate to \"/login\" when appropriate (non-demo).",
+      "summary": "Prevent navigation/update loops by adding a single-run redirect guard in AppLayout and ensuring redirects use replace and only happen when needed.",
       "acceptanceCriteria": [
-        "If profileLoading is false and profile is null/undefined while not in demo mode, AppLayout triggers navigation to \"/login\" and shows a minimal loading/fallback view until navigation completes.",
-        "The authenticated layout never returns null in a way that results in a blank page."
+        "When the user is unauthenticated (non-demo), protected routes redirect to \"/login\" without repeated re-renders or repeated navigation attempts.",
+        "When the user is authenticated but has no profile, the app redirects to \"/login\" without repeated re-renders or repeated navigation attempts.",
+        "No console errors indicating infinite update loops occur during redirects."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Update AppLayout to never return null. If demo mode is active, derive/render a demo profile (e.g., via existing demo profile utilities) so navigation/header/content renders. If not demo and profile is missing (or identity is absent), render a minimal fallback (spinner + English message) and navigate to \"/login\". Use the authorization component guidance for unauthenticated/guest handling and for clearing cached data on logout. Verify the component's usage instructions before implementing."
+          "description": "Add a single-run navigation guard (similar to IndexGatePage's hasNavigated ref) for redirect side-effects. Ensure redirects use `replace: true` and only trigger when the current route is not already the destination, to prevent repeated navigations/Maximum update depth issues."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Ensure demo/identity auto-navigation from LoginPage uses `replace: true` where appropriate and avoids triggering navigation when already on the destination route, preventing loops between /login and protected layout."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Use a single React Query QueryClient instance across React Query provider and TanStack Router context.",
+      "summary": "Make Demo Mode fully functional without actor/backend by ensuring all React Query hooks used in layout/dashboards are demo-safe (disabled or return demo values) when demo mode is active.",
       "acceptanceCriteria": [
-        "There is exactly one QueryClient instance created for the app runtime and it is used by both <QueryClientProvider> and the router context.",
-        "After the change, navigation and data fetching (including demo mode) works without a blank screen regression."
+        "Using Demo Sign In on `LoginPage` (admin/demo123) navigates to the admin dashboard and renders without triggering any backend calls that require an actor.",
+        "Demo mode pages render without throwing \"Actor not available\" errors.",
+        "Common layout elements (e.g., notifications bell) do not crash in demo mode and display demo-safe empty states."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Remove the extra QueryClient creation in App.tsx and instead obtain the existing QueryClient from React Query context (e.g., via a hook) and pass it into the TanStack Router context at runtime. Ensure the router provider receives a context containing that single QueryClient instance so route loaders/components share the same cache."
+          "description": "Audit and update all React Query hooks so demo mode does not require an actor: for queries with demo fallbacks, make `enabled` true in demo mode even when actor is unavailable; for queries/mutations without demo implementations but reachable from demo UI (e.g., staff/admin screens), either disable them in demo mode or return demo-safe empty values to prevent 'Actor not available' errors."
+        },
+        {
+          "path": "frontend/src/components/notifications/NotificationsBell.tsx",
+          "operation": "modify",
+          "description": "Ensure the notifications UI gracefully handles demo mode empty states and never triggers backend-required actions when demo is active (it should remain stable even when hooks return empty arrays / disabled state). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "operation": "modify",
+          "description": "Ensure layout-level behavior in demo mode does not depend on backend profile queries/actor availability (use demo profile when active, and avoid redirects or rendering states that assume actor-backed queries). Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Add a global client-side error fallback so uncaught errors render a visible error panel with a \"Go to Login\" action.",
+      "summary": "Use exactly one QueryClientProvider at runtime and ensure TanStack Router context uses the same QueryClient instance.",
       "acceptanceCriteria": [
-        "If an uncaught error happens during initial render, the app displays an error view with readable text in English and a button/link that navigates to \"/login\".",
-        "The error fallback is styled consistently with the existing Tailwind/Shadcn UI components."
+        "There is exactly one `QueryClientProvider` wrapping the app at runtime.",
+        "The `QueryClient` instance passed to TanStack Router context is the same instance used by `QueryClientProvider`.",
+        "The production build no longer crashes on initial load due to provider/context conflicts."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Remove nested/double `QueryClientProvider` usage and stop constructing a separate QueryClient here. Instead, obtain the existing QueryClient from the (immutable) top-level provider via `useQueryClient()` and pass that same instance into the TanStack Router context to keep provider/context consistent."
+        },
+        {
+          "path": "frontend/src/routeTree.tsx",
+          "operation": "modify",
+          "description": "Ensure router context typing remains compatible with providing the QueryClient sourced from the single runtime provider; keep context wiring stable to avoid mismatched instances."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Enhance global error fallback to display actionable English error details (message + stack/component stack when available) and provide a safe path back to /login.",
+      "acceptanceCriteria": [
+        "When an error is thrown, the global error screen displays: (1) a human-readable error message, and (2) stack and/or component stack when available.",
+        "User-facing error UI text is in English.",
+        "The error screen still provides a safe path to return to \"/login\"."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/error/GlobalErrorBoundary.tsx",
-          "operation": "create",
-          "description": "Add a global React error boundary component that catches render/runtime errors and displays a user-visible English error panel plus a \"Go to Login\" action. Use shadcn-ui components (e.g., Button/Card/Alert if available) for consistent styling. Verify the component's usage instructions before implementing."
+          "operation": "modify",
+          "description": "Improve the fallback UI content to be more actionable in production: ensure the rendered view always includes a clear human-readable message (using getErrorMessage), and renders stack and/or component stack sections when present (optionally expanded by default). Keep all user-facing text in English and retain a safe navigation path to \"/login\". Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/utils/getErrorMessage.ts",
           "operation": "modify",
-          "description": "Wrap the app's router rendering with GlobalErrorBoundary so uncaught render/runtime errors show the fallback UI instead of a blank screen. Ensure the fallback can navigate to \"/login\" (via router navigation or a link) without relying on forbidden/immutable files."
+          "description": "Extend error-message extraction to better handle production/minified React errors and common runtime failures (while preserving existing BigInt-safe handling), so the global fallback presents meaningful guidance instead of only a minified code."
         }
       ]
     }
